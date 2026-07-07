@@ -1,0 +1,29 @@
+/**
+ * D.RED design tokens — palette de marque officielle (brand kit) :
+ * Dark Red (principal), Clear White + Classic Beige (secondaires),
+ * complétée par des couleurs sémantiques succès/attente.
+ * Consommé par chaque app via `@import "@d-red/ui/styles/tokens.css";`
+ * dans son globals.css, après `@import "tailwindcss";`.
+ */
+
+:root {
+  --color-ink: #0b0b0d;
+  --color-ink-soft: #1c1c1f;
+  --color-white: #ffffff;
+  --color-beige: #f8efd7;
+  --color-dred: #a50606;
+  --color-dred-dark: #7a0505;
+  --color-success: #1f9d55;
+  --color-waiting: #e8912d;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-white: var(--color-white);
+  --color-beige: var(--color-beige);
+  --color-dred: var(--color-dred);
+  --color-dred-dark: var(--color-dred-dark);
+  --color-success: var(--color-success);
+  --color-waiting: var(--color-waiting);
+}

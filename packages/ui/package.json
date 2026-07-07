@@ -1,0 +1,28 @@
+{
+  "name": "@d-red/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./styles/*": "./styles/*",
+    "./lib/*": {
+      "types": "./dist/lib/*.d.ts",
+      "default": "./dist/lib/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@d-red/eslint-config": "workspace:*",
+    "@d-red/tsconfig": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

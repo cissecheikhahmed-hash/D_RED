@@ -1,0 +1,25 @@
+{
+  "name": "@d-red/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@d-red/eslint-config": "workspace:*",
+    "@d-red/tsconfig": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}
