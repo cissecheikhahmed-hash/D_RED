@@ -27,10 +27,6 @@ le détail des décisions produit).
 - **I** — Recherche simultanée infra+donneurs du Niveau Critique : la
   timeline WH-04 reste volontairement séquentielle (décision produit), donc
   jamais représentée visuellement comme "simultanée".
-- **J** — Reconnexion Socket.IO après coupure réseau pendant une démo
-  multi-fenêtres.
-- **K** — États vides des dashboards (WH-02/WC-01) : gérés a minima par un
-  message texte, pas de traitement visuel dédié.
 
 ## Decision Engine
 

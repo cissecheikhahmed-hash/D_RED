@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { DEMANDE_STATUS_LABELS, NIVEAU_URGENCE_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { Inbox } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,7 +46,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-col gap-3">
         {mesDemandes.length === 0 && (
-          <p className="text-sm text-muted-foreground">Aucune demande active.</p>
+          <EmptyState icon={Inbox} message="Aucune demande active pour cet établissement." />
         )}
         {mesDemandes.map((demande) => (
           <Card

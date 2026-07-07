@@ -66,11 +66,20 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
   redevient disponible dès `DONATION_COMPLETED` plutôt que de rester bloqué
   jusqu'à `CLOSED` (corrigé le 2026-07-07 — bug de double-réservation
   confirmé puis résolu) : validé.
+- **J** — Reconnexion Socket.IO : détection de coupure confirmée (événement
+  `disconnect` observé immédiatement), reconnexion automatique native de
+  socket.io-client, resynchronisation complète de l'état à la reconnexion
+  (le serveur ré-émet `state:sync` à chaque nouvelle connexion). Ajout d'une
+  bannière visuelle "Connexion perdue — reconnexion en cours…" dans les deux
+  apps, absente jusqu'ici : validé.
+- **K** — États vides : nouveau composant `EmptyState` partagé
+  (`@d-red/ui/components/empty-state`), utilisé dans WH-02, WC-01, WC-04
+  (x2) et MD-14 à la place d'un simple texte : validé.
 - **Mode Démo** — pause / step / play / restart : validé.
 
 Le filtre de rayon de mobilisation (`RADIUS_WAVES_KM`) est désormais
 réellement branché dans le moteur (vagues progressives par niveau
 d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
 
-Scénario E et les cas H–K (voir `TODO.md`) restent volontairement hors
-périmètre ou non exercés.
+Scénario E et les cas H–I (voir `TODO.md`) restent volontairement hors
+périmètre.

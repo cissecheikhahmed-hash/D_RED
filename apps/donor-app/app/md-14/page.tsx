@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { DEMANDE_STATUS_LABELS, MISSION_STATUS_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +38,7 @@ export default function HistoriquePage() {
 
       <div className="flex flex-col gap-3">
         {mesMissions.length === 0 && (
-          <p className="text-sm text-muted-foreground">Aucune mission pour le moment.</p>
+          <EmptyState icon={History} message="Aucune mission pour le moment." />
         )}
         {mesMissions.map((mission) => {
           const demande = demandes.find((d) => d.id === mission.demandeId);

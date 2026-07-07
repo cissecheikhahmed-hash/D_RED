@@ -1,6 +1,8 @@
 "use client";
 
 import { useDredStore, dredApi } from "@d-red/sync-client";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { FlaskConical, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -20,7 +22,9 @@ export default function ConsoleLaboPage() {
         <h2 className="text-sm font-medium text-muted-foreground">
           Dons arrivés en attente de prélèvement
         </h2>
-        {arrivees.length === 0 && <p className="text-sm text-muted-foreground">Aucun.</p>}
+        {arrivees.length === 0 && (
+          <EmptyState icon={FlaskConical} message="Aucun don en attente de prélèvement." />
+        )}
         {arrivees.map((demande) => {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
@@ -40,7 +44,7 @@ export default function ConsoleLaboPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium text-muted-foreground">Bilans à envoyer</h2>
-        {aClore.length === 0 && <p className="text-sm text-muted-foreground">Aucun.</p>}
+        {aClore.length === 0 && <EmptyState icon={Mail} message="Aucun bilan à envoyer." />}
         {aClore.map((demande) => {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
