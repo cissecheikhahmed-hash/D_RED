@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CelebrationIllustration } from "@/components/illustrations";
 
 /** MD-13 — Clôture / gratification, juste après le scan de réception à l'accueil. */
 export default function CloturePage() {
@@ -10,9 +10,7 @@ export default function CloturePage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
-      <div className="flex size-20 items-center justify-center rounded-full bg-secondary text-primary">
-        <PartyPopper className="size-9" />
-      </div>
+      <CelebrationIllustration className="size-32" />
       <div>
         <h1 className="text-2xl font-semibold">Merci !</h1>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">

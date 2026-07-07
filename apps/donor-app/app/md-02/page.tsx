@@ -3,21 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Droplet, MapPinned, ShieldCheck } from "lucide-react";
+import {
+  AlerteIllustration,
+  DisponibiliteIllustration,
+  VerifieIllustration,
+} from "@/components/illustrations";
 
 const SLIDES = [
   {
-    icon: Droplet,
+    Illustration: AlerteIllustration,
     titre: "Sauvez des vies en quelques minutes",
     texte: "D.Red vous alerte quand un hôpital a besoin de votre groupe sanguin, à proximité.",
   },
   {
-    icon: MapPinned,
+    Illustration: DisponibiliteIllustration,
     titre: "Uniquement quand vous êtes disponible",
     texte: "Vous choisissez votre disponibilité. Aucune sollicitation si vous êtes en veille.",
   },
   {
-    icon: ShieldCheck,
+    Illustration: VerifieIllustration,
     titre: "Un réseau de donneurs vérifiés",
     texte: "Votre statut de donneur vérifié est confirmé en personne lors d'un don ou d'une campagne.",
   },
@@ -28,15 +32,13 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const slide = SLIDES[index]!;
-  const Icon = slide.icon;
+  const Illustration = slide.Illustration;
   const dernier = index === SLIDES.length - 1;
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-between p-6">
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <div className="flex size-20 items-center justify-center rounded-full bg-secondary text-primary">
-          <Icon className="size-9" />
-        </div>
+        <Illustration className="size-40" />
         <h1 className="text-2xl font-semibold">{slide.titre}</h1>
         <p className="max-w-sm text-muted-foreground">{slide.texte}</p>
         <div className="flex gap-2">

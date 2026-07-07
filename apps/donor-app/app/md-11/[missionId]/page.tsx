@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDredStore, dredApi } from "@d-red/sync-client";
 import { distanceKm, simulateEtaMinutes } from "@d-red/utils";
 import { Button } from "@/components/ui/button";
+import { GuidageIllustration } from "@/components/illustrations";
 
 /** MD-11 — Guidage GPS simulé (illustration, pas de vraie carte) + désengagement. */
 export default function GuidagePage() {
@@ -37,18 +38,8 @@ export default function GuidagePage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-between p-6">
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl bg-secondary">
-        <svg viewBox="0 0 200 120" className="w-full max-w-xs text-primary">
-          <path
-            d="M10 100 Q 60 20 100 60 T 190 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeDasharray="8 6"
-          />
-          <circle cx="10" cy="100" r="5" fill="currentColor" />
-          <circle cx="190" cy="20" r="6" fill="currentColor" />
-        </svg>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-hidden rounded-xl bg-secondary">
+        <GuidageIllustration className="w-full" />
         <p className="text-sm text-muted-foreground">Position simulée — pas de carte réelle</p>
       </div>
 
