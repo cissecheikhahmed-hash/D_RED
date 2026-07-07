@@ -67,4 +67,28 @@ export const donneurs: Donneur[] = [
     position: { lat: 14.6900, lng: -17.4300 },
     nombreDonsEffectues: 0,
   },
+  {
+    id: "don_seynabou_diallo",
+    nom: "Seynabou Diallo",
+    telephone: "+221 77 123 45 07",
+    groupeSanguin: "O-",
+    canalAlertePrefere: "SMS",
+    statutVerification: "VERIFIE",
+    disponible: true,
+    // Thiès — couvre les demandes de etab_hopital_thies dans un rayon réaliste.
+    position: { lat: 14.8037, lng: -16.9402 },
+    nombreDonsEffectues: 3,
+  },
+  {
+    id: "don_cheikh_sarr",
+    nom: "Cheikh Sarr",
+    telephone: "+221 77 123 45 08",
+    groupeSanguin: "A+",
+    canalAlertePrefere: "PUSH",
+    statutVerification: "VERIFIE",
+    disponible: true,
+    // Thiès — couvre les demandes de etab_hopital_thies dans un rayon réaliste.
+    position: { lat: 14.7735, lng: -16.9021 },
+    nombreDonsEffectues: 5,
+  },
 ];

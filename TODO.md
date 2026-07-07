@@ -22,8 +22,6 @@ le détail des décisions produit).
 
 - **E** — Plusieurs donneurs acceptent simultanément ; WC-02 reste une popup
   séquentielle (un seul candidat à la fois), pas de comparaison multi-donneurs.
-- **G** — Urgences concurrentes de plusieurs hôpitaux se disputant le même
-  bassin de donneurs.
 - **H** — Une poche devient disponible pendant qu'un donneur est déjà en
   route : règle de coupure médicale toujours non définie par le produit.
 - **I** — Recherche simultanée infra+donneurs du Niveau Critique : la
@@ -36,11 +34,13 @@ le détail des décisions produit).
 
 ## Decision Engine
 
-- Les rayons de vague (`RADIUS_WAVES_KM` dans `packages/utils`) sont définis
-  mais **non branchés** comme filtre réel dans `apps/sync-server/src/engine.ts` :
-  le moteur sélectionne aujourd'hui le donneur vérifié disponible le plus
-  proche, sans plafond de distance. Seul le délai de recherche infrastructure
-  est réellement configurable (WC-03).
+- **Re-notification différée** — quand une demande B ne trouve aucun candidat
+  parce que l'unique donneur compatible est occupé sur une demande A (Scénario
+  G), B reste figée en `DONORS_NOTIFIED` même une fois ce donneur libéré : rien
+  ne "réveille" B automatiquement. Il faudrait, à chaque libération d'un
+  donneur (refus/éjection/annulation/don complété), rebalayer les demandes en
+  recherche sans candidat actif plutôt que de ne relancer que la demande
+  d'origine.
 
 ## Autres
 
@@ -48,3 +48,11 @@ le détail des décisions produit).
   caméra côté hôpital (décision volontaire du brief).
 - Carte de guidage (MD-11) : illustration SVG simulée, jamais de tuiles
   réelles (décision volontaire, indépendance vis-à-vis du wifi en démo live).
+
+## UI — prochaine passe (demandé par l'utilisateur, 2026-07-07)
+
+- Ajouter de vraies illustrations (dessins représentatifs) ou images plutôt
+  que les icônes Lucide/formes SVG minimalistes actuelles — notamment
+  onboarding (MD-02), splash (MD-01), guidage (MD-11), clôture/gratification
+  (MD-13). Explicitement mis de côté pour une passe UI ultérieure, pas pour
+  maintenant.

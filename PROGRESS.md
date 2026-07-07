@@ -61,7 +61,16 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 - **F** — Rayon de mobilisation épuisé (plus aucun donneur compatible) :
   WH-04 affiche désormais un message explicite au lieu de rester figé sans
   explication (corrigé le 2026-07-07) : validé.
+- **G** — Urgences concurrentes se disputant le même donneur : un donneur ne
+  peut plus être notifié pour deux demandes actives en même temps, et
+  redevient disponible dès `DONATION_COMPLETED` plutôt que de rester bloqué
+  jusqu'à `CLOSED` (corrigé le 2026-07-07 — bug de double-réservation
+  confirmé puis résolu) : validé.
 - **Mode Démo** — pause / step / play / restart : validé.
 
-Scénario E et les cas G–K (voir `TODO.md`) restent volontairement hors
+Le filtre de rayon de mobilisation (`RADIUS_WAVES_KM`) est désormais
+réellement branché dans le moteur (vagues progressives par niveau
+d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
+
+Scénario E et les cas H–K (voir `TODO.md`) restent volontairement hors
 périmètre ou non exercés.
