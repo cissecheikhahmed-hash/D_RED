@@ -44,11 +44,3 @@ le détail des décisions produit).
   caméra côté hôpital (décision volontaire du brief).
 - Carte de guidage (MD-11) : illustration SVG simulée, jamais de tuiles
   réelles (décision volontaire, indépendance vis-à-vis du wifi en démo live).
-
-## UI — prochaine passe (demandé par l'utilisateur, 2026-07-07)
-
-- Ajouter de vraies illustrations (dessins représentatifs) ou images plutôt
-  que les icônes Lucide/formes SVG minimalistes actuelles — notamment
-  onboarding (MD-02), splash (MD-01), guidage (MD-11), clôture/gratification
-  (MD-13). Explicitement mis de côté pour une passe UI ultérieure, pas pour
-  maintenant.
