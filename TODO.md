@@ -20,13 +20,8 @@ le détail des décisions produit).
 
 ## Scénarios de test non couverts
 
-- **C** — Poche infra trouvée rapidement, aucun donneur mobilisé (second
-  chemin heureux, distinct du scénario A).
 - **E** — Plusieurs donneurs acceptent simultanément ; WC-02 reste une popup
   séquentielle (un seul candidat à la fois), pas de comparaison multi-donneurs.
-- **F** — Rayon de mobilisation épuisé, aucun donneur trouvé : le serveur
-  laisse la demande en `DONORS_NOTIFIED` sans candidat ; aucun écran dédié
-  n'explique cet état à l'hôpital/CNTS.
 - **G** — Urgences concurrentes de plusieurs hôpitaux se disputant le même
   bassin de donneurs.
 - **H** — Une poche devient disponible pendant qu'un donneur est déjà en

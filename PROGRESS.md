@@ -54,7 +54,14 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 
 - **A** — Succès complet via mobilisation donneur : validé de bout en bout.
 - **B** — Premier donneur refuse, relance automatique vers le suivant : validé.
+- **C** — Niveau Standard résolu par une poche infrastructure existante, aucun
+  donneur jamais mobilisé (corrigé le 2026-07-07 — le moteur ne distinguait
+  pas encore ce chemin) : validé.
 - **D** — Donneur se désiste en route, re-recherche immédiate : validé.
+- **F** — Rayon de mobilisation épuisé (plus aucun donneur compatible) :
+  WH-04 affiche désormais un message explicite au lieu de rester figé sans
+  explication (corrigé le 2026-07-07) : validé.
 - **Mode Démo** — pause / step / play / restart : validé.
 
-Scénarios C, E et les cas F–K (voir `TODO.md`) restent à exercer/affiner.
+Scénario E et les cas G–K (voir `TODO.md`) restent volontairement hors
+périmètre ou non exercés.

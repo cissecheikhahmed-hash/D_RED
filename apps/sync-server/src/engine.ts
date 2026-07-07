@@ -13,6 +13,15 @@ export function demarrerDemande(demande: Demande): void {
     demande.status = "SCANNING_INFRAS";
     broadcastState();
     demoClock.schedule(() => {
+      // Niveau Standard : recherche infrastructure uniquement (Phase 2) —
+      // une poche compatible est toujours trouvée, aucun donneur n'est
+      // jamais mobilisé. C'est le second "happy path" (Scénario C),
+      // distinct de la mobilisation donneur des niveaux Prioritaire/Critique.
+      if (demande.niveauUrgence === "STANDARD") {
+        demande.status = "CLOSED";
+        broadcastState();
+        return;
+      }
       notifierProchainDonneur(demande.id);
     }, policies.dureeRechercheMsParNiveau[demande.niveauUrgence]);
   }, 500);

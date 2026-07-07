@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { masquerNom } from "@/lib/masking";
 
-const ETAPES: DemandeStatus[] = [
+/** Niveau Standard : recherche infrastructure uniquement, aucun donneur jamais mobilisé. */
+const ETAPES_INFRA: DemandeStatus[] = ["CREATED", "SCANNING_INFRAS", "CLOSED"];
+
+/** Niveaux Prioritaire/Critique : mobilisation donneur, rendu toujours séquentiel. */
+const ETAPES_DONNEUR: DemandeStatus[] = [
   "CREATED",
   "SCANNING_INFRAS",
   "DONORS_NOTIFIED",
@@ -20,12 +24,15 @@ const ETAPES: DemandeStatus[] = [
   "CLOSED",
 ];
 
+const LABEL_ETAPE_INFRA_FINALE = "Poche compatible trouvée";
+
 /** WH-04 — Timeline temps réel, toujours séquentielle (y compris pour le Niveau Critique). */
 export default function TimelinePage() {
   const params = useParams<{ demandeId: string }>();
   const router = useRouter();
   const demandes = useDredStore((s) => s.demandes);
   const donneurs = useDredStore((s) => s.donneurs);
+  const missions = useDredStore((s) => s.missions);
   const demande = demandes.find((d) => d.id === params.demandeId);
   const donneurAssigne = donneurs.find((d) => d.id === demande?.donneurAssigneId);
 
@@ -37,7 +44,20 @@ export default function TimelinePage() {
     );
   }
 
-  const indexActuel = ETAPES.indexOf(demande.status);
+  const viaInfraSeule = demande.niveauUrgence === "STANDARD";
+  const etapes = viaInfraSeule ? ETAPES_INFRA : ETAPES_DONNEUR;
+  const indexActuel = etapes.indexOf(demande.status);
+
+  const missionActive = missions.find(
+    (m) =>
+      m.demandeId === demande.id &&
+      (m.status === "NOTIFIED" || m.status === "PRE_RESERVED" || m.status === "EN_ROUTE"),
+  );
+  const rechercheEpuisee =
+    !viaInfraSeule &&
+    demande.status === "DONORS_NOTIFIED" &&
+    !missionActive &&
+    missions.some((m) => m.demandeId === demande.id);
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
@@ -59,9 +79,19 @@ export default function TimelinePage() {
         </Card>
       )}
 
+      {rechercheEpuisee && (
+        <Card className="border-waiting">
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Aucun donneur disponible dans le rayon de mobilisation pour le moment. La recherche
+            continue automatiquement dès qu&apos;un donneur compatible devient disponible.
+          </CardContent>
+        </Card>
+      )}
+
       <ol className="flex flex-col gap-3">
-        {ETAPES.map((etape, i) => {
+        {etapes.map((etape, i) => {
           const atteinte = i <= indexActuel;
+          const derniereEtapeInfra = viaInfraSeule && etape === "CLOSED";
           return (
             <li key={etape} className="flex items-center gap-3">
               <span
@@ -72,7 +102,7 @@ export default function TimelinePage() {
                 {atteinte ? <Check className="size-3.5" /> : i + 1}
               </span>
               <span className={atteinte ? "font-medium" : "text-muted-foreground"}>
-                {DEMANDE_STATUS_LABELS[etape]}
+                {derniereEtapeInfra ? LABEL_ETAPE_INFRA_FINALE : DEMANDE_STATUS_LABELS[etape]}
               </span>
             </li>
           );
