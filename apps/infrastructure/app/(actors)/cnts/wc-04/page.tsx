@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDredStore, dredApi } from "@d-red/sync-client";
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { FlaskConical, Mail } from "lucide-react";
@@ -10,13 +11,45 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function ConsoleLaboPage() {
   const demandes = useDredStore((s) => s.demandes);
   const etablissements = useDredStore((s) => s.etablissements);
+  const [enCoursId, setEnCoursId] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
 
   const arrivees = demandes.filter((d) => d.status === "ARRIVED");
   const aClore = demandes.filter((d) => d.status === "DONATION_COMPLETED");
 
+  async function marquerDonEffectue(demandeId: string) {
+    setErreur(null);
+    setEnCoursId(demandeId);
+    try {
+      await dredApi.marquerDonEffectue(demandeId);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : "Échec de la requête.");
+    } finally {
+      setEnCoursId(null);
+    }
+  }
+
+  async function envoyerBilan(demandeId: string) {
+    setErreur(null);
+    setEnCoursId(demandeId);
+    try {
+      await dredApi.envoyerBilan(demandeId);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : "Échec de la requête.");
+    } finally {
+      setEnCoursId(null);
+    }
+  }
+
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
       <h1 className="text-2xl font-semibold">Console labo &amp; dispatch</h1>
+
+      {erreur && (
+        <Card className="border-destructive">
+          <CardContent className="pt-6 text-sm text-destructive">{erreur}</CardContent>
+        </Card>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium text-muted-foreground">
@@ -33,8 +66,12 @@ export default function ConsoleLaboPage() {
                 <span className="font-medium">
                   {demande.groupeSanguin} · {etablissement?.nom}
                 </span>
-                <Button size="sm" onClick={() => dredApi.marquerDonEffectue(demande.id)}>
-                  Don effectué
+                <Button
+                  size="sm"
+                  disabled={enCoursId === demande.id}
+                  onClick={() => marquerDonEffectue(demande.id)}
+                >
+                  {enCoursId === demande.id ? "…" : "Don effectué"}
                 </Button>
               </CardContent>
             </Card>
@@ -53,8 +90,12 @@ export default function ConsoleLaboPage() {
                 <span className="font-medium">
                   {demande.groupeSanguin} · {etablissement?.nom}
                 </span>
-                <Button size="sm" onClick={() => dredApi.envoyerBilan(demande.id)}>
-                  Envoyer le bilan sécurisé
+                <Button
+                  size="sm"
+                  disabled={enCoursId === demande.id}
+                  onClick={() => envoyerBilan(demande.id)}
+                >
+                  {enCoursId === demande.id ? "…" : "Envoyer le bilan sécurisé"}
                 </Button>
               </CardContent>
             </Card>
