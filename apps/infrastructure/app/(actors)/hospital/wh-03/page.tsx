@@ -35,7 +35,7 @@ export default function FormulaireUrgencePage() {
   const { etablissementId } = useEtablissementSession();
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { niveauUrgence: "STANDARD", produit: "SANG_TOTAL" },
+    defaultValues: { niveauUrgence: "STANDARD", produit: "SANG_TOTAL", groupeSanguin: "O-" },
   });
 
   async function onSubmit(values: FormValues) {
