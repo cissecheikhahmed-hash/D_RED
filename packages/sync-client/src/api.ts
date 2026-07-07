@@ -92,6 +92,7 @@ export function definirDureeRecherche(niveauUrgence: NiveauUrgence, dureeMs: num
 
 // Mode Démo — panneau présentateur uniquement
 export const modeDemo = {
+  status: () => obtenir<{ paused: boolean }>("/demo/status"),
   play: () => poster<{ paused: boolean }>("/demo/play"),
   pause: () => poster<{ paused: boolean }>("/demo/pause"),
   step: () => poster<{ advanced: boolean; paused: boolean }>("/demo/step"),

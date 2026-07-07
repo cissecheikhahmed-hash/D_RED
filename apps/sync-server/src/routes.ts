@@ -219,6 +219,10 @@ router.post("/demandes/:demandeId/bilan", (req, res) => {
 });
 
 // Mode Démo — panneau présentateur, jamais exposé dans les écrans jury
+router.get("/demo/status", (_req, res) => {
+  res.json({ paused: demoClock.isPaused });
+});
+
 router.post("/demo/play", (_req, res) => {
   demoClock.play();
   res.json({ paused: demoClock.isPaused });

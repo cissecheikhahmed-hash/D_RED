@@ -75,7 +75,9 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 - **K** — États vides : nouveau composant `EmptyState` partagé
   (`@d-red/ui/components/empty-state`), utilisé dans WH-02, WC-01, WC-04
   (x2) et MD-14 à la place d'un simple texte : validé.
-- **Mode Démo** — pause / step / play / restart : validé.
+- **Mode Démo** — pause / step / play / restart : validé, désormais pilotable
+  via un panneau présentateur dédié (`/demo` dans `apps/infrastructure`,
+  jamais lié depuis une navigation visible) plutôt que par appel API brut.
 
 Le filtre de rayon de mobilisation (`RADIUS_WAVES_KM`) est désormais
 réellement branché dans le moteur (vagues progressives par niveau
