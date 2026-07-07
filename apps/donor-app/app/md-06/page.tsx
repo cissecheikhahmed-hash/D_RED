@@ -55,7 +55,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <span className="text-sm">Disponible pour une mobilisation</span>
             <Switch
-              defaultChecked={donneur?.disponible ?? false}
+              checked={donneur?.disponible ?? false}
               disabled={!donneur}
               onCheckedChange={basculerDisponibilite}
             />
