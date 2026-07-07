@@ -67,6 +67,18 @@ section Core Loop).
 pnpm turbo run build lint type-check
 ```
 
+### Tests d'intégration du Decision Engine
+
+Avec le sync-server déjà démarré (`pnpm --filter @d-red/sync-server dev`) :
+
+```bash
+pnpm --filter @d-red/sync-server test:scenarios
+```
+
+Rejoue automatiquement les scénarios A-G, les Decision Policies (WC-03) et
+le Mode Démo contre le serveur réel. ⚠️ Remet l'état à zéro plusieurs fois
+pendant l'exécution — à ne pas lancer pendant une démo en cours.
+
 ## Écrans
 
 Voir `PROGRESS.md` pour l'inventaire complet des écrans (codes MD-*/WH-*/WC-*)

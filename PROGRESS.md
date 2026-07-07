@@ -85,3 +85,28 @@ d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
 
 Scénario E et les cas H–I (voir `TODO.md`) restent volontairement hors
 périmètre.
+
+## Tests automatisés
+
+Suite d'intégration (`apps/sync-server/scripts/test-scenarios.mjs`,
+`pnpm --filter @d-red/sync-server test:scenarios`) : 32 assertions, tous les
+scénarios A/B/C/D/F/G + Decision Policies + Mode Démo, rejouables en
+quelques secondes contre le serveur réel — 32/32 au vert.
+
+## Bugs trouvés et corrigés pendant la QA utilisateur
+
+- MD-06 ne redirigeait que sur mission `NOTIFIED`, laissant le donneur
+  bloqué si sa mission était déjà à un stade plus avancé.
+- Peer dependencies manquantes de `@base-ui/react` (`date-fns`,
+  `@date-fns/tz`), cause probable d'une erreur Turbopack observée en direct.
+- Switch non contrôlé sur MD-06 (`defaultChecked` avec une valeur qui change
+  après montage) — avertissement Base UI, corrigé en composant contrôlé.
+- Select non contrôlé sur WH-03 (`groupeSanguin` sans valeur par défaut) —
+  même classe de bug, même correctif.
+
+## Illustrations
+
+SVG dessinés à la main (`apps/donor-app/components/illustrations.tsx`) sur
+MD-01 (logo goutte de sang), MD-02 (3 scènes onboarding), MD-11 (guidage
+urbain), MD-13 (célébration) — aucune image externe, cohérent avec la
+contrainte zéro dépendance réseau en démo live.
