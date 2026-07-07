@@ -17,13 +17,21 @@ export default function DashboardPage() {
   const missions = useDredStore((s) => s.missions);
   const donneur = donneurs.find((d) => d.id === session.donneurId);
 
-  const missionEnCours = missions.find(
-    (m) => m.donneurId === session.donneurId && m.status === "NOTIFIED",
-  );
+  const mesMissionsActives = missions.filter((m) => m.donneurId === session.donneurId);
+  const missionNotifiee = mesMissionsActives.find((m) => m.status === "NOTIFIED");
+  const missionPreReservee = mesMissionsActives.find((m) => m.status === "PRE_RESERVED");
+  const missionEnRoute = mesMissionsActives.find((m) => m.status === "EN_ROUTE");
+  const missionArrivee = mesMissionsActives.find((m) => m.status === "ARRIVED");
 
   useEffect(() => {
-    if (missionEnCours) router.push(`/md-07/${missionEnCours.id}`);
-  }, [missionEnCours, router]);
+    // Redirige toujours vers l'écran correspondant à l'état le plus avancé de la mission en
+    // cours — pas seulement "NOTIFIED" — pour ne jamais laisser le donneur bloqué sur MD-06
+    // (ex. après un rechargement de page en plein milieu du Core Loop).
+    if (missionArrivee) router.push(`/md-12/${missionArrivee.id}`);
+    else if (missionEnRoute) router.push(`/md-11/${missionEnRoute.id}`);
+    else if (missionPreReservee) router.push(`/md-09/${missionPreReservee.id}`);
+    else if (missionNotifiee) router.push(`/md-07/${missionNotifiee.id}`);
+  }, [missionArrivee, missionEnRoute, missionPreReservee, missionNotifiee, router]);
 
   function basculerDisponibilite(disponible: boolean) {
     if (!donneur) return;
