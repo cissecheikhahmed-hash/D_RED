@@ -91,4 +91,15 @@ export const donneurs: Donneur[] = [
     position: { lat: 14.7735, lng: -16.9021 },
     nombreDonsEffectues: 5,
   },
+  {
+    id: "don_fadel_fall",
+    nom: "Fadel Fall",
+    telephone: "+221 77 777 77 77",
+    groupeSanguin: "O+",
+    canalAlertePrefere: "PUSH",
+    statutVerification: "VERIFIE",
+    disponible: true,
+    position: { lat: 14.6928, lng: -17.4467 },
+    nombreDonsEffectues: 0,
+  },
 ];
