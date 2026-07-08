@@ -158,3 +158,26 @@ SVG dessinés à la main (`apps/donor-app/components/illustrations.tsx`) sur
 MD-01 (logo goutte de sang), MD-02 (3 scènes onboarding), MD-11 (guidage
 urbain), MD-13 (célébration) — aucune image externe, cohérent avec la
 contrainte zéro dépendance réseau en démo live.
+
+## Passe de polish pré-hackathon (2026-07-08)
+
+Refonte visuelle sans toucher à la Core Loop ni au Decision Engine :
+
+- **Badges sémantiques partagés** (`@d-red/ui/components/status-badges`) :
+  urgence et statuts codés couleur sur la palette (Critique rouge pulsé,
+  moteur actif orange animé, résolu vert), déployés sur WH-02/WH-04/WC-01/
+  WC-02/WC-04/MD-14. Ajout du `@source` Tailwind vers `packages/ui/src`
+  (sans lui, les classes du package n'étaient générées que par coïncidence).
+- **App shell Infrastructure** (`components/app-shell.tsx`) : topbar de
+  marque, identité de l'acteur, onglets, témoin temps réel, contenu centré.
+  `useEtablissementSession` migré sur `useSyncExternalStore`.
+- **Cadre téléphone** pour l'app Donneur sur desktop (plein écran sur mobile).
+- **Dashboards** WH-02/WC-01/WA-01 : tuiles KPI (`StatCard`), horodatage
+  relatif vivant (`useNow` + `formatRelativeTime`).
+- **WH-04** : timeline verticale avec connecteurs, étape courante pulsée,
+  horodatage réel de chaque étape — le moteur enregistre désormais l'heure
+  d'entrée dans chaque statut (`changerStatutDemande`, `historiqueStatuts`).
+- **États** : skeletons avant la première synchro (`pret`), succès verts
+  (MD-13, WH-05), mentions « simulé » retirées des textes visibles.
+- Typo `RecherchePorallele` corrigée, marque unifiée « D.RED », titres et
+  espacements harmonisés. 43/43 tests toujours au vert après chaque étape.
