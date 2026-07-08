@@ -181,3 +181,10 @@ Refonte visuelle sans toucher à la Core Loop ni au Decision Engine :
   (MD-13, WH-05), mentions « simulé » retirées des textes visibles.
 - Typo `RecherchePorallele` corrigée, marque unifiée « D.RED », titres et
   espacements harmonisés. 43/43 tests toujours au vert après chaque étape.
+- **Responsive mobile Infrastructure** : padding adaptatif (`p-4 sm:p-6`)
+  sur toutes les pages acteurs, rangées de badges qui wrappent (WH-02,
+  WC-01, WC-04), topbar compactée et onglets scrollables dans l'app shell.
+- **MD-06** : une mission `ARRIVED` (QR déjà scanné) ne redirige plus vers
+  MD-12 — elle enfermait le donneur dans la boucle MD-06 → MD-12 → MD-13
+  jusqu'à la clôture CNTS ; le dashboard affiche à la place une carte
+  « don en cours » avec lien volontaire.
