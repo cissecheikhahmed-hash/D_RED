@@ -12,10 +12,15 @@ le détail des décisions produit).
   (Bronze/Argent/Or/Platine) calculés à partir de `nombreDonsEffectues`,
   écran MD-10. Reste hors périmètre : notifications de changement de palier,
   vraies récompenses/avantages concrets (ce ne sont que des badges visuels).
-- **Portails dédiés Banque de sang / Clinique privée / Admin** — le rôle
-  "Établissement" est généralisé (champ `type`) et couvert par les mêmes
-  écrans WH-*. Des portails/écrans réellement distincts par type, et un rôle
-  Admin à part entière, restent à concevoir si le produit réel les requiert.
+- **Portails Banque de sang / Clinique privée / Admin (partie construite le
+  2026-07-08)** : Banque/Clinique gardent les écrans WH-* partagés mais avec
+  un habillage distinct (icône + badge de type sur WH-02). Admin a désormais
+  un écran minimal WA-01 (vue d'ensemble nationale, lecture seule) — **ce
+  périmètre est une extrapolation de l'assistant, pas une spec produit
+  confirmée**, aucun écran Admin n'ayant jamais été défini dans la
+  documentation d'origine (seule une table de permissions en mentionne
+  l'existence). Reste hors périmètre : vraie gestion de comptes/établissements
+  (création/suppression), tout ce qui dépasserait la lecture seule.
 - **Partenaires / Campagnes** (`Partenaire`, `Campagne`) — entités décrites en
   Phase 2, gérées côté CNTS, absentes de ce prototype.
 

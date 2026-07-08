@@ -42,6 +42,20 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 | WH-04 | Timeline temps réel (séquentielle) | ✅ |
 | WH-05 | Scan réception (confirmation manuelle) | ✅ |
 
+Banque de sang et Clinique privée partagent ces mêmes écrans avec un
+habillage distinct (icône + badge de type sur WH-02) — pas de duplication de
+code.
+
+## Écran Admin (`apps/infrastructure/app/(actors)/admin`)
+
+| Code  | Écran                                        | État |
+| ----- | ---------------------------------------------- | ---- |
+| WA-01 | Vue d'ensemble nationale (lecture seule)         | ✅ |
+
+⚠️ Convention `WA-*` introduite par l'assistant (aucun code d'écran Admin
+n'existait dans la doc produit). Périmètre volontairement minimal et
+lecture seule — voir `TODO.md`.
+
 ## Écrans CNTS (`apps/infrastructure/app/(actors)/cnts`)
 
 | Code  | Écran                                  | État |

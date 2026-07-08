@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, ShieldCheck } from "lucide-react";
+import { Building2, ShieldCheck, LayoutDashboard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /** Sélecteur d'acteur — cette app sert deux fenêtres distinctes (Établissement / CNTS) en démo. */
@@ -30,6 +30,17 @@ export default function RoleSelectorPage() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               Supervision nationale et régulation
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/wa-01">
+          <Card className="transition-colors hover:bg-secondary">
+            <CardHeader className="flex flex-row items-center gap-3">
+              <LayoutDashboard className="size-6 text-primary" />
+              <CardTitle>Espace Admin</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Vue d&apos;ensemble nationale (lecture seule)
             </CardContent>
           </Card>
         </Link>

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
-import { DEMANDE_STATUS_LABELS, NIVEAU_URGENCE_LABELS } from "@d-red/types";
+import { DEMANDE_STATUS_LABELS, NIVEAU_URGENCE_LABELS, TYPE_ETABLISSEMENT_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { Inbox } from "lucide-react";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEtablissementSession } from "@/lib/etablissementSession";
+import { ICONE_TYPE_ETABLISSEMENT } from "@/lib/etablissementIcons";
 
 /** WH-02 — Dashboard des demandes de l'établissement connecté. */
 export default function DashboardPage() {
@@ -28,12 +29,26 @@ export default function DashboardPage() {
     .filter((d) => d.etablissementId === etablissementId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
+  const IconeType = etablissement ? ICONE_TYPE_ETABLISSEMENT[etablissement.type] : null;
+
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{etablissement?.nom}</h1>
-          <p className="text-sm text-muted-foreground">{etablissement?.ville}</p>
+        <div className="flex items-center gap-3">
+          {IconeType && (
+            <div className="flex size-11 items-center justify-center rounded-full bg-secondary text-primary">
+              <IconeType className="size-5" />
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-semibold">{etablissement?.nom}</h1>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">{etablissement?.ville}</p>
+              {etablissement && (
+                <Badge variant="outline">{TYPE_ETABLISSEMENT_LABELS[etablissement.type]}</Badge>
+              )}
+            </div>
+          </div>
         </div>
         <Button variant="ghost" size="sm" onClick={() => { clearEtablissementId(); router.push("/hospital/wh-01"); }}>
           Changer
