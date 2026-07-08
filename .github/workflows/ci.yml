@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, lint, type-check
+        run: pnpm turbo run build lint type-check
+
+      - name: Start sync-server
+        run: |
+          pnpm --filter @d-red/sync-server build
+          nohup node apps/sync-server/dist/index.js > sync-server.log 2>&1 &
+          npx wait-on http://localhost:4000/state --timeout 15000
+
+      - name: Run scenario tests
+        run: pnpm --filter @d-red/sync-server test:scenarios
+
+      - name: Show sync-server log on failure
+        if: failure()
+        run: cat sync-server.log
