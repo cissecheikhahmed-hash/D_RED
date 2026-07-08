@@ -3,21 +3,18 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
-import { TYPE_ETABLISSEMENT_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
-import { Inbox } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Inbox, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEtablissementSession } from "@/lib/etablissementSession";
-import { ICONE_TYPE_ETABLISSEMENT } from "@/lib/etablissementIcons";
 
 /** WH-02 — Dashboard des demandes de l'établissement connecté. */
 export default function DashboardPage() {
   const router = useRouter();
-  const { etablissementId, clearEtablissementId } = useEtablissementSession();
+  const { etablissementId } = useEtablissementSession();
   const etablissements = useDredStore((s) => s.etablissements);
   const demandes = useDredStore((s) => s.demandes);
   const etablissement = etablissements.find((e) => e.id === etablissementId);
@@ -30,35 +27,18 @@ export default function DashboardPage() {
     .filter((d) => d.etablissementId === etablissementId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
-  const IconeType = etablissement ? ICONE_TYPE_ETABLISSEMENT[etablissement.type] : null;
-
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {IconeType && (
-            <div className="flex size-11 items-center justify-center rounded-full bg-secondary text-primary">
-              <IconeType className="size-5" />
-            </div>
-          )}
-          <div>
-            <h1 className="text-2xl font-semibold">{etablissement?.nom}</h1>
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">{etablissement?.ville}</p>
-              {etablissement && (
-                <Badge variant="outline">{TYPE_ETABLISSEMENT_LABELS[etablissement.type]}</Badge>
-              )}
-            </div>
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Demandes</h1>
+          {etablissement && <p className="text-sm text-muted-foreground">{etablissement.ville}</p>}
         </div>
-        <Button variant="ghost" size="sm" onClick={() => { clearEtablissementId(); router.push("/hospital/wh-01"); }}>
-          Changer
+        <Button onClick={() => router.push("/hospital/wh-03")}>
+          <Plus className="size-4" />
+          Nouvelle urgence
         </Button>
       </div>
-
-      <Button size="lg" onClick={() => router.push("/hospital/wh-03")}>
-        + Nouvelle urgence
-      </Button>
 
       <div className="flex flex-col gap-3">
         {mesDemandes.length === 0 && (
