@@ -1,49 +1,56 @@
 import Link from "next/link";
-import { Building2, ShieldCheck, LayoutDashboard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, ChevronRight, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-/** Sélecteur d'acteur — cette app sert deux fenêtres distinctes (Établissement / CNTS) en démo. */
+const ESPACES = [
+  {
+    href: "/hospital/wh-01",
+    icone: Building2,
+    titre: "Espace Établissement",
+    description: "Hôpital, banque de sang ou clinique privée",
+  },
+  {
+    href: "/cnts/wc-01",
+    icone: ShieldCheck,
+    titre: "Espace CNTS",
+    description: "Supervision nationale et régulation",
+  },
+  {
+    href: "/admin/wa-01",
+    icone: LayoutDashboard,
+    titre: "Espace Admin",
+    description: "Vue d'ensemble nationale (lecture seule)",
+  },
+] as const;
+
+/** Sélecteur d'acteur — cette app sert plusieurs fenêtres distinctes en démo. */
 export default function RoleSelectorPage() {
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-8 p-6">
       <div className="text-center">
-        <h1 className="font-display text-4xl text-primary">D.RED</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Choisissez la fenêtre à ouvrir</p>
+        <h1 className="font-display text-5xl text-primary">D.RED</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Digital Blood Response &amp; Exchange Directory
+        </p>
+        <p className="text-sm font-medium">Choisissez la fenêtre à ouvrir</p>
       </div>
-      <div className="grid w-full max-w-md gap-4">
-        <Link href="/hospital/wh-01">
-          <Card className="transition-colors hover:bg-secondary">
-            <CardHeader className="flex flex-row items-center gap-3">
-              <Building2 className="size-6 text-primary" />
-              <CardTitle>Espace Établissement</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Hôpital, banque de sang ou clinique privée
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/cnts/wc-01">
-          <Card className="transition-colors hover:bg-secondary">
-            <CardHeader className="flex flex-row items-center gap-3">
-              <ShieldCheck className="size-6 text-primary" />
-              <CardTitle>Espace CNTS</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Supervision nationale et régulation
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/admin/wa-01">
-          <Card className="transition-colors hover:bg-secondary">
-            <CardHeader className="flex flex-row items-center gap-3">
-              <LayoutDashboard className="size-6 text-primary" />
-              <CardTitle>Espace Admin</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Vue d&apos;ensemble nationale (lecture seule)
-            </CardContent>
-          </Card>
-        </Link>
+      <div className="grid w-full max-w-md gap-3">
+        {ESPACES.map(({ href, icone: Icone, titre, description }) => (
+          <Link key={href} href={href} className="group">
+            <Card className="transition-all group-hover:-translate-y-0.5 group-hover:shadow-sm">
+              <CardContent className="flex items-center gap-4">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icone className="size-5" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{titre}</span>
+                  <span className="text-sm text-muted-foreground">{description}</span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
     </main>
   );

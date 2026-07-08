@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useDredStore, dredApi } from "@d-red/sync-client";
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
+import { PageHeader } from "@d-red/ui/components/page-header";
 import { UrgencyBadge } from "@d-red/ui/components/status-badges";
-import { FlaskConical, Mail } from "lucide-react";
+import { FlaskConical, Loader2, Mail } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DemandeRow } from "@/components/demande-row";
 
-/** WC-04 — Console labo & dispatch : don effectué, puis envoi du bilan sécurisé. */
+/** WC-04 — Console labo : validation du don, puis envoi du bilan sécurisé au donneur. */
 export default function ConsoleLaboPage() {
   const demandes = useDredStore((s) => s.demandes);
   const etablissements = useDredStore((s) => s.etablissements);
@@ -25,6 +28,7 @@ export default function ConsoleLaboPage() {
     setEnCoursId(demandeId);
     try {
       await dredApi.marquerDonEffectue(demandeId);
+      toast.success("Don validé — la demande passe au bilan.");
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Échec de la requête.");
     } finally {
@@ -37,6 +41,7 @@ export default function ConsoleLaboPage() {
     setEnCoursId(demandeId);
     try {
       await dredApi.envoyerBilan(demandeId);
+      toast.success("Bilan sécurisé envoyé — demande clôturée.");
     } catch (e) {
       setErreur(e instanceof Error ? e.message : "Échec de la requête.");
     } finally {
@@ -46,11 +51,14 @@ export default function ConsoleLaboPage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-semibold">Console labo &amp; dispatch</h1>
+      <PageHeader
+        title="Console labo"
+        subtitle="Validation des dons à l'arrivée, puis envoi du bilan sécurisé au donneur."
+      />
 
       {erreur && (
         <Card className="border-destructive">
-          <CardContent className="pt-6 text-sm text-destructive">{erreur}</CardContent>
+          <CardContent className="text-sm text-destructive">{erreur}</CardContent>
         </Card>
       )}
 
@@ -65,22 +73,22 @@ export default function ConsoleLaboPage() {
         {arrivees.map((demande) => {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
-            <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between gap-3 pt-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg text-primary">{demande.groupeSanguin}</span>
-                  <span className="text-sm">{etablissement?.nom}</span>
-                  <UrgencyBadge niveau={demande.niveauUrgence} />
-                </div>
+            <DemandeRow
+              key={demande.id}
+              groupe={demande.groupeSanguin}
+              badges={<UrgencyBadge niveau={demande.niveauUrgence} />}
+              meta={etablissement?.nom}
+              end={
                 <Button
                   size="sm"
                   disabled={enCoursId === demande.id}
                   onClick={() => marquerDonEffectue(demande.id)}
                 >
-                  {enCoursId === demande.id ? "…" : "Don effectué"}
+                  {enCoursId === demande.id && <Loader2 className="size-3.5 animate-spin" />}
+                  Don effectué
                 </Button>
-              </CardContent>
-            </Card>
+              }
+            />
           );
         })}
       </section>
@@ -92,22 +100,22 @@ export default function ConsoleLaboPage() {
         {aClore.map((demande) => {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
-            <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between gap-3 pt-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-lg text-primary">{demande.groupeSanguin}</span>
-                  <span className="text-sm">{etablissement?.nom}</span>
-                  <UrgencyBadge niveau={demande.niveauUrgence} />
-                </div>
+            <DemandeRow
+              key={demande.id}
+              groupe={demande.groupeSanguin}
+              badges={<UrgencyBadge niveau={demande.niveauUrgence} />}
+              meta={etablissement?.nom}
+              end={
                 <Button
                   size="sm"
                   disabled={enCoursId === demande.id}
                   onClick={() => envoyerBilan(demande.id)}
                 >
-                  {enCoursId === demande.id ? "…" : "Envoyer le bilan sécurisé"}
+                  {enCoursId === demande.id && <Loader2 className="size-3.5 animate-spin" />}
+                  Envoyer le bilan sécurisé
                 </Button>
-              </CardContent>
-            </Card>
+              }
+            />
           );
         })}
       </section>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, SearchX } from "lucide-react";
 import { useDredStore } from "@d-red/sync-client";
 import {
   DEMANDE_STATUS_LABELS,
@@ -11,6 +11,8 @@ import {
   type ScanInfraEtape,
 } from "@d-red/types";
 import { formatDistanceKm, formatHeureFr } from "@d-red/utils";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { GroupeSanguinTag } from "@d-red/ui/components/groupe-sanguin-tag";
 import { DemandeStatusBadge, DotBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,8 +58,11 @@ export default function TimelinePage() {
 
   if (!demande) {
     return (
-      <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 items-center justify-center p-6">
-        <p className="text-muted-foreground">Demande introuvable.</p>
+      <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-4 p-6">
+        <EmptyState icon={SearchX} message="Demande introuvable — elle a peut-être été retirée au redémarrage de la démo." />
+        <Button variant="outline" className="mx-auto" onClick={() => router.push("/hospital/wh-02")}>
+          Retour aux demandes
+        </Button>
       </main>
     );
   }
@@ -93,7 +98,9 @@ export default function TimelinePage() {
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-display text-2xl text-primary">{demande.groupeSanguin}</h1>
+          <h1>
+            <GroupeSanguinTag groupe={demande.groupeSanguin} taille="lg" />
+          </h1>
           <UrgencyBadge niveau={demande.niveauUrgence} />
           <DemandeStatusBadge status={demande.status} />
         </div>
@@ -104,7 +111,7 @@ export default function TimelinePage() {
 
       {donneurAssigne && (
         <Card>
-          <CardContent className="flex items-center justify-between pt-6">
+          <CardContent className="flex items-center justify-between">
             <span className="text-sm">Donneur assigné</span>
             <Badge variant="secondary">{masquerNom(donneurAssigne.nom)}</Badge>
           </CardContent>
@@ -113,7 +120,7 @@ export default function TimelinePage() {
 
       {sourcePoche && (
         <Card>
-          <CardContent className="flex items-center justify-between gap-3 pt-6">
+          <CardContent className="flex items-center justify-between gap-3">
             <span className="text-sm">Poche fournie par</span>
             <Badge variant="secondary">
               {sourcePoche.nom}
@@ -125,7 +132,7 @@ export default function TimelinePage() {
 
       {rechercheEpuisee && (
         <Card className="border-waiting">
-          <CardContent className="pt-6 text-sm text-muted-foreground">
+          <CardContent className="text-sm text-muted-foreground">
             Aucun donneur disponible dans le rayon de mobilisation pour le moment. La recherche
             continue automatiquement dès qu&apos;un donneur compatible devient disponible.
           </CardContent>
@@ -141,7 +148,7 @@ export default function TimelinePage() {
         />
       ) : (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <ol className="flex flex-col">
               {etapes.map((etape, i) => {
                 const derniereEtapeInfra = viaInfraSeule && etape === "CLOSED";
@@ -317,7 +324,7 @@ function RechercheParallele({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <Card>
-        <CardContent className="flex flex-col gap-2 pt-6">
+        <CardContent className="flex flex-col gap-2">
           <div className="flex items-center justify-center gap-2 text-center">
             <Loader2 className="size-6 animate-spin text-primary" />
           </div>
@@ -332,7 +339,7 @@ function RechercheParallele({
         </CardContent>
       </Card>
       <Card>
-        <CardContent className="flex flex-col gap-2 pt-6">
+        <CardContent className="flex flex-col gap-2">
           <div className="flex items-center justify-center gap-2 text-center">
             <Loader2 className="size-6 animate-spin text-primary" />
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { dredApi } from "@d-red/sync-client";
 import { NIVEAU_URGENCE_LABELS, type NiveauUrgence } from "@d-red/types";
+import { PageHeader } from "@d-red/ui/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,10 @@ export default function PolitiquesPage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-semibold">Decision Policies</h1>
+      <PageHeader
+        title="Politiques du Decision Engine"
+        subtitle="Paramètres de la recherche automatique, modifiables en direct pendant la démonstration."
+      />
       <Card>
         <CardHeader>
           <CardTitle>Fenêtre de scan des infrastructures</CardTitle>
@@ -41,13 +45,17 @@ export default function PolitiquesPage() {
           {NIVEAUX.map((niveau) => (
             <div key={niveau} className="flex items-center justify-between gap-4">
               <Label className="flex-1">{NIVEAU_URGENCE_LABELS[niveau]}</Label>
-              <Input
-                type="number"
-                step={100}
-                className="w-32"
-                value={politiques?.dureeRechercheMsParNiveau[niveau] ?? ""}
-                onChange={(e) => modifier(niveau, Number(e.target.value))}
-              />
+              {politiques ? (
+                <Input
+                  type="number"
+                  step={100}
+                  className="w-32"
+                  value={politiques.dureeRechercheMsParNiveau[niveau]}
+                  onChange={(e) => modifier(niveau, Number(e.target.value))}
+                />
+              ) : (
+                <div className="h-9 w-32 animate-pulse rounded-lg bg-beige" />
+              )}
               <span className="text-sm text-muted-foreground">ms</span>
             </div>
           ))}

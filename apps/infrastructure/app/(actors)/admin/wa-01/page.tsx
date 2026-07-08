@@ -2,10 +2,12 @@
 
 import { useDredStore } from "@d-red/sync-client";
 import { TYPE_ETABLISSEMENT_LABELS } from "@d-red/types";
+import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
+import { PageHeader } from "@d-red/ui/components/page-header";
 import { StatCard } from "@d-red/ui/components/stat-card";
 import { Activity, Archive, Building2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * WA-01 — Vue d'ensemble nationale (Admin).
@@ -21,6 +23,7 @@ export default function VueEnsembleAdminPage() {
   const etablissements = useDredStore((s) => s.etablissements);
   const donneurs = useDredStore((s) => s.donneurs);
   const demandes = useDredStore((s) => s.demandes);
+  const pret = useDredStore((s) => s.pret);
 
   const donneursVerifies = donneurs.filter((d) => d.statutVerification === "VERIFIE").length;
   const demandesActives = demandes.filter((d) => d.status !== "CLOSED").length;
@@ -32,13 +35,10 @@ export default function VueEnsembleAdminPage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Vue d&apos;ensemble nationale</h1>
-        <p className="text-xs text-muted-foreground">
-          Portail Admin — périmètre minimal (lecture seule), non spécifié par la documentation
-          produit d&apos;origine.
-        </p>
-      </div>
+      <PageHeader
+        title="Vue d'ensemble nationale"
+        subtitle="Portail Admin — lecture seule sur l'ensemble du réseau."
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Établissements" value={etablissements.length} icon={Building2} />
@@ -52,26 +52,37 @@ export default function VueEnsembleAdminPage() {
         <StatCard label="Demandes au total" value={demandes.length} icon={Archive} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Établissements du réseau</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {etablissements.map((e) => (
-            <div key={e.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-              <div>
-                <p className="text-sm font-medium">{e.nom}</p>
-                <p className="text-xs text-muted-foreground">{e.ville}</p>
+      {!pret ? (
+        <ListSkeleton rows={3} />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Établissements du réseau</CardTitle>
+            <CardDescription>
+              {Object.entries(parType)
+                .map(
+                  ([type, n]) =>
+                    `${n} × ${TYPE_ETABLISSEMENT_LABELS[type as keyof typeof TYPE_ETABLISSEMENT_LABELS]}`,
+                )
+                .join(" · ")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {etablissements.map((e) => (
+              <div
+                key={e.id}
+                className="flex items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0"
+              >
+                <div>
+                  <p className="text-sm font-medium">{e.nom}</p>
+                  <p className="text-xs text-muted-foreground">{e.ville}</p>
+                </div>
+                <Badge variant="outline">{TYPE_ETABLISSEMENT_LABELS[e.type]}</Badge>
               </div>
-              <Badge variant="outline">{TYPE_ETABLISSEMENT_LABELS[e.type]}</Badge>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <p className="text-xs text-muted-foreground">
-        Répartition : {Object.entries(parType).map(([type, n]) => `${n} ${TYPE_ETABLISSEMENT_LABELS[type as keyof typeof TYPE_ETABLISSEMENT_LABELS]}`).join(" · ")}
-      </p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </main>
   );
 }

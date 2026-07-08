@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { TYPE_ETABLISSEMENT_LABELS } from "@d-red/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -20,6 +20,7 @@ import { useEtablissementSession } from "@/lib/etablissementSession";
 export default function ConnexionPage() {
   const router = useRouter();
   const etablissements = useDredStore((s) => s.etablissements);
+  const pret = useDredStore((s) => s.pret);
   const { setEtablissementId } = useEtablissementSession();
   const [selection, setSelection] = useState<string>("");
 
@@ -30,17 +31,22 @@ export default function ConnexionPage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-4 sm:p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-4 sm:p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Connexion Établissement</CardTitle>
+          <CardTitle>Espace Établissement</CardTitle>
+          <CardDescription>
+            Choisissez l&apos;établissement joué par cette fenêtre de démonstration.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label>Établissement</Label>
             <Select value={selection} onValueChange={(value) => setSelection(value ?? "")}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choisissez votre établissement" />
+              <SelectTrigger className="w-full" disabled={!pret}>
+                <SelectValue
+                  placeholder={pret ? "Choisissez votre établissement" : "Chargement du réseau…"}
+                />
               </SelectTrigger>
               <SelectContent>
                 {etablissements.map((e) => (

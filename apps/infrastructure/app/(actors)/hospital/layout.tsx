@@ -46,7 +46,7 @@ export default function HospitalLayout({ children }: { children: React.ReactNode
               router.push("/hospital/wh-01");
             }}
           >
-            Changer
+            Changer d&apos;établissement
           </Button>
         )
       }

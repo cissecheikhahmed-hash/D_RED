@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Anton } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 
@@ -32,6 +33,16 @@ export default function RootLayout({
     >
       <body className="flex min-h-dvh flex-col">
         <Providers>{children}</Providers>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "var(--card)",
+              color: "var(--foreground)",
+              border: "1px solid var(--border)",
+            },
+          }}
+        />
       </body>
     </html>
   );

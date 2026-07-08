@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { dredApi, useDredStore } from "@d-red/sync-client";
 import type { Mission } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { DotBadge } from "@d-red/ui/components/status-badges";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,13 +31,27 @@ interface Props {
  * pour comparaison, plutôt qu'une fiche à candidat unique.
  */
 export function ValidationDialog({ demandeId, missions, open, onOpenChange }: Props) {
+  const [enCoursId, setEnCoursId] = useState<string | null>(null);
+
   async function confirmer(missionId: string) {
-    await dredApi.confirmerDemande(demandeId, missionId);
-    onOpenChange(false);
+    setEnCoursId(missionId);
+    try {
+      await dredApi.confirmerDemande(demandeId, missionId);
+      toast.success("Donneur confirmé — mission verrouillée, il se met en route.");
+      onOpenChange(false);
+    } finally {
+      setEnCoursId(null);
+    }
   }
 
   async function ejecter(missionId: string) {
-    await dredApi.ejecterMission(demandeId, missionId);
+    setEnCoursId(missionId);
+    try {
+      await dredApi.ejecterMission(demandeId, missionId);
+      toast("Candidat éjecté de la mission.");
+    } finally {
+      setEnCoursId(null);
+    }
   }
 
   return (
@@ -50,6 +67,7 @@ export function ValidationDialog({ demandeId, missions, open, onOpenChange }: Pr
             <CandidatCard
               key={mission.id}
               mission={mission}
+              pending={enCoursId === mission.id}
               onConfirmer={() => confirmer(mission.id)}
               onEjecter={() => ejecter(mission.id)}
             />
@@ -67,10 +85,12 @@ export function ValidationDialog({ demandeId, missions, open, onOpenChange }: Pr
 
 function CandidatCard({
   mission,
+  pending,
   onConfirmer,
   onEjecter,
 }: {
   mission: Mission;
+  pending: boolean;
   onConfirmer: () => void;
   onEjecter: () => void;
 }) {
@@ -110,10 +130,11 @@ function CandidatCard({
             </div>
           )}
           <div className="flex gap-2">
-            <Button size="sm" onClick={onConfirmer}>
-              CONFIRMER &amp; VERROUILLER
+            <Button size="sm" disabled={pending} onClick={onConfirmer}>
+              {pending && <Loader2 className="size-3.5 animate-spin" />}
+              Confirmer et verrouiller
             </Button>
-            <Button size="sm" variant="outline" onClick={onEjecter}>
+            <Button size="sm" variant="outline" disabled={pending} onClick={onEjecter}>
               Éjecter
             </Button>
           </div>

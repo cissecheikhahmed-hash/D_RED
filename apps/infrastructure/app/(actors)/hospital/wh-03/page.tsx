@@ -6,8 +6,10 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { dredApi } from "@d-red/sync-client";
 import { NIVEAU_URGENCE_LABELS, PRODUIT_SANGUIN_LABELS } from "@d-red/types";
+import { PageHeader } from "@d-red/ui/components/page-header";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -33,7 +35,11 @@ type FormValues = z.infer<typeof schema>;
 export default function FormulaireUrgencePage() {
   const router = useRouter();
   const { etablissementId } = useEtablissementSession();
-  const { control, handleSubmit } = useForm<FormValues>({
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { niveauUrgence: "STANDARD", produit: "SANG_TOTAL", groupeSanguin: "O-" },
   });
@@ -45,11 +51,12 @@ export default function FormulaireUrgencePage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-4 sm:p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 mx-auto flex w-full max-w-lg flex-1 flex-col justify-center gap-6 p-4 sm:p-6">
+      <PageHeader
+        title="Nouvelle urgence"
+        subtitle="Formulaire éclair : trois choix, le Decision Engine s'occupe du reste."
+      />
       <Card>
-        <CardHeader>
-          <CardTitle>Urgence éclair</CardTitle>
-        </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
@@ -114,8 +121,9 @@ export default function FormulaireUrgencePage() {
               />
             </div>
 
-            <Button type="submit" size="lg">
-              LANCER L&apos;ORCHESTRATION
+            <Button type="submit" size="lg" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+              Lancer l&apos;orchestration
             </Button>
           </form>
         </CardContent>

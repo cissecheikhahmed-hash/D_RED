@@ -5,13 +5,14 @@ import { useDredStore } from "@d-red/sync-client";
 import { formatRelativeTime } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
+import { PageHeader } from "@d-red/ui/components/page-header";
 import { StatCard } from "@d-red/ui/components/stat-card";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { useNow } from "@d-red/ui/hooks/use-now";
 import { Activity, HeartHandshake, ShieldCheck, Siren, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { DemandeRow } from "@/components/demande-row";
 import { ValidationDialog } from "@/components/wc-02-validation-dialog";
 
 /** WC-01 — Dashboard de supervision nationale (toutes les demandes, tous établissements). */
@@ -42,7 +43,10 @@ export default function SupervisionPage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-semibold">Supervision nationale</h1>
+      <PageHeader
+        title="Supervision nationale"
+        subtitle="Toutes les demandes du réseau, régulées en temps réel."
+      />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Demandes actives" value={demandesActives.length} icon={Activity} />
@@ -73,29 +77,30 @@ export default function SupervisionPage() {
           );
           const aTraiter = candidats.some((m) => m.status === "PRE_RESERVED");
           return (
-            <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between gap-3 pt-6">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-display text-xl text-primary">{demande.groupeSanguin}</p>
-                    <UrgencyBadge niveau={demande.niveauUrgence} />
-                  </div>
-                  <p className="text-sm">{etablissement?.nom}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatRelativeTime(demande.createdAt, maintenant)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  {candidats.length > 1 && <Badge variant="outline">{candidats.length} candidats</Badge>}
+            <DemandeRow
+              key={demande.id}
+              groupe={demande.groupeSanguin}
+              badges={<UrgencyBadge niveau={demande.niveauUrgence} />}
+              meta={
+                <>
+                  <span className="text-sm text-foreground">{etablissement?.nom}</span>
+                  <span className="ml-2">{formatRelativeTime(demande.createdAt, maintenant)}</span>
+                </>
+              }
+              end={
+                <>
+                  {candidats.length > 1 && (
+                    <Badge variant="outline">{candidats.length} candidats</Badge>
+                  )}
                   <DemandeStatusBadge status={demande.status} />
                   {aTraiter && (
                     <Button size="sm" onClick={() => setDialogDemandeId(demande.id)}>
                       Traiter
                     </Button>
                   )}
-                </div>
-              </CardContent>
-            </Card>
+                </>
+              }
+            />
           );
         })}
       </div>
