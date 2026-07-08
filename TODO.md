@@ -59,7 +59,6 @@ le détail des décisions produit).
 
 ## CI
 
-- Le workflow `.github/workflows/ci.yml` existe et a été vérifié en rejouant
-  chaque étape localement, mais **aucun dépôt GitHub distant n'est encore
-  configuré** — la CI ne s'activera qu'après un premier `git push` vers
-  GitHub.
+- ~~Aucun dépôt GitHub distant configuré~~ **Fait le 2026-07-08** : dépôt
+  privé `coreOverflow/D_RED` créé, `main` poussée, CI active et au vert
+  (premier run corrigé : Node 22 requis par pnpm 11).
