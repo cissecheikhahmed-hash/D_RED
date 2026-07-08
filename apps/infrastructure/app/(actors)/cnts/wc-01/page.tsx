@@ -19,9 +19,8 @@ export default function SupervisionPage() {
   const [dialogDemandeId, setDialogDemandeId] = useState<string | null>(null);
 
   const demandesTriees = [...demandes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  const demandeDialog = demandesTriees.find((d) => d.id === dialogDemandeId);
-  const missionDialog = missions.find(
-    (m) => m.demandeId === dialogDemandeId && m.status === "PRE_RESERVED",
+  const missionsDialog = missions.filter(
+    (m) => m.demandeId === dialogDemandeId && (m.status === "NOTIFIED" || m.status === "PRE_RESERVED"),
   );
 
   return (
@@ -34,9 +33,10 @@ export default function SupervisionPage() {
         )}
         {demandesTriees.map((demande) => {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
-          const missionAValider = missions.find(
-            (m) => m.demandeId === demande.id && m.status === "PRE_RESERVED",
+          const candidats = missions.filter(
+            (m) => m.demandeId === demande.id && (m.status === "NOTIFIED" || m.status === "PRE_RESERVED"),
           );
+          const aTraiter = candidats.some((m) => m.status === "PRE_RESERVED");
           return (
             <Card key={demande.id}>
               <CardContent className="flex items-center justify-between pt-6">
@@ -49,8 +49,9 @@ export default function SupervisionPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {candidats.length > 1 && <Badge variant="outline">{candidats.length} candidats</Badge>}
                   <Badge variant="secondary">{DEMANDE_STATUS_LABELS[demande.status]}</Badge>
-                  {missionAValider && (
+                  {aTraiter && (
                     <Button size="sm" onClick={() => setDialogDemandeId(demande.id)}>
                       Traiter
                     </Button>
@@ -62,10 +63,10 @@ export default function SupervisionPage() {
         })}
       </div>
 
-      {demandeDialog && missionDialog && (
+      {dialogDemandeId && missionsDialog.length > 0 && (
         <ValidationDialog
-          demandeId={demandeDialog.id}
-          missionId={missionDialog.id}
+          demandeId={dialogDemandeId}
+          missions={missionsDialog}
           open={Boolean(dialogDemandeId)}
           onOpenChange={(open) => !open && setDialogDemandeId(null)}
         />

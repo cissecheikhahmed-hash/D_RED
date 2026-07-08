@@ -79,20 +79,32 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 - **Mode Démo** — pause / step / play / restart : validé, désormais pilotable
   via un panneau présentateur dédié (`/demo` dans `apps/infrastructure`,
   jamais lié depuis une navigation visible) plutôt que par appel API brut.
+- **E** — Niveau Critique notifie désormais 2 candidats simultanément ; WC-01/
+  WC-02 affichent une vraie comparaison (les deux candidats, leur statut,
+  leurs réponses) au lieu d'une popup à candidat unique. Le CNTS choisit
+  lequel confirmer ; l'autre est éjecté automatiquement. `donneurAssigneId`
+  n'est plus fixé à l'acceptation mais seulement à la confirmation CNTS
+  (évite d'afficher côté hôpital un donneur "assigné" prématuré pendant la
+  comparaison) : validé.
+- **I** — Le Niveau Critique affiche désormais un rendu **parallèle** sur
+  WH-04 pendant la phase de recherche (deux voies actives simultanément :
+  "Recherche infrastructure" / "Recherche donneurs" avec la liste des
+  candidats en cours), au lieu de la timeline séquentielle unique. Les
+  autres niveaux restent séquentiels : validé.
 
 Le filtre de rayon de mobilisation (`RADIUS_WAVES_KM`) est désormais
 réellement branché dans le moteur (vagues progressives par niveau
 d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
 
-Scénario E et les cas H–I (voir `TODO.md`) restent volontairement hors
-périmètre.
+Le cas H (voir `TODO.md`) reste bloqué : la doc produit ne définit jamais
+la règle médicale nécessaire pour l'implémenter correctement.
 
 ## Tests automatisés
 
 Suite d'intégration (`apps/sync-server/scripts/test-scenarios.mjs`,
-`pnpm --filter @d-red/sync-server test:scenarios`) : 32 assertions, tous les
-scénarios A/B/C/D/F/G + Decision Policies + Mode Démo, rejouables en
-quelques secondes contre le serveur réel — 32/32 au vert.
+`pnpm --filter @d-red/sync-server test:scenarios`) : 38 assertions, tous les
+scénarios A/B/C/D/E/F/G + Decision Policies + Mode Démo, rejouables en
+quelques secondes contre le serveur réel — 38/38 au vert.
 
 ## Bugs trouvés et corrigés pendant la QA utilisateur
 

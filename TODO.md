@@ -21,13 +21,10 @@ le détail des décisions produit).
 
 ## Scénarios de test non couverts
 
-- **E** — Plusieurs donneurs acceptent simultanément ; WC-02 reste une popup
-  séquentielle (un seul candidat à la fois), pas de comparaison multi-donneurs.
 - **H** — Une poche devient disponible pendant qu'un donneur est déjà en
   route : règle de coupure médicale toujours non définie par le produit.
-- **I** — Recherche simultanée infra+donneurs du Niveau Critique : la
-  timeline WH-04 reste volontairement séquentielle (décision produit), donc
-  jamais représentée visuellement comme "simultanée".
+  Reste bloqué : impossible à implémenter correctement sans inventer une
+  règle médicale que la documentation produit elle-même ne définit pas.
 
 ## Decision Engine
 
