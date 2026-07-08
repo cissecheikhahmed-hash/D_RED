@@ -24,14 +24,16 @@ export default function DashboardPage() {
   const missionArrivee = mesMissionsActives.find((m) => m.status === "ARRIVED");
 
   useEffect(() => {
-    // Redirige toujours vers l'écran correspondant à l'état le plus avancé de la mission en
-    // cours — pas seulement "NOTIFIED" — pour ne jamais laisser le donneur bloqué sur MD-06
-    // (ex. après un rechargement de page en plein milieu du Core Loop).
-    if (missionArrivee) router.push(`/md-12/${missionArrivee.id}`);
-    else if (missionEnRoute) router.push(`/md-11/${missionEnRoute.id}`);
+    // Redirige vers l'écran correspondant à l'état le plus avancé de la mission en cours —
+    // pas seulement "NOTIFIED" — pour ne jamais laisser le donneur bloqué sur MD-06
+    // (ex. après un rechargement de page en plein milieu du Core Loop). Exception : une
+    // mission ARRIVED n'exige plus d'action du donneur (QR déjà scanné) — la rediriger
+    // enfermait le donneur dans la boucle MD-06 → MD-12 → MD-13 sans retour possible au
+    // dashboard tant que le CNTS n'avait pas clôturé ; elle s'affiche en carte ci-dessous.
+    if (missionEnRoute) router.push(`/md-11/${missionEnRoute.id}`);
     else if (missionPreReservee) router.push(`/md-09/${missionPreReservee.id}`);
     else if (missionNotifiee) router.push(`/md-07/${missionNotifiee.id}`);
-  }, [missionArrivee, missionEnRoute, missionPreReservee, missionNotifiee, router]);
+  }, [missionEnRoute, missionPreReservee, missionNotifiee, router]);
 
   function basculerDisponibilite(disponible: boolean) {
     if (!donneur) return;
@@ -46,6 +48,26 @@ export default function DashboardPage() {
           Changer de profil
         </Button>
       </div>
+
+      {missionArrivee && (
+        <Card className="border-success/25 bg-success/5">
+          <CardContent className="flex items-center justify-between gap-3 pt-6">
+            <div>
+              <p className="text-sm font-medium">Don en cours — présence confirmée</p>
+              <p className="text-xs text-muted-foreground">
+                L&apos;équipe sur place finalise votre don. Merci !
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => router.push(`/md-13/${missionArrivee.id}`)}
+            >
+              Voir
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
