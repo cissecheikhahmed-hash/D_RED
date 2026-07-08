@@ -39,13 +39,13 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-2 rounded-xl border border-border bg-card p-4",
+        "flex items-start justify-between gap-2 rounded-xl border border-border bg-card p-4 shadow-xs",
         className,
       )}
     >
       <div className="flex min-w-0 flex-col gap-1">
         <p className="truncate text-xs text-muted-foreground">{label}</p>
-        <p className={cn("text-2xl font-semibold leading-none", classes.value)}>{value}</p>
+        <p className={cn("font-display text-3xl leading-none", classes.value)}>{value}</p>
         {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
       </div>
       <span

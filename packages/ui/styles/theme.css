@@ -1,0 +1,79 @@
+/**
+ * Thème D.RED partagé — mapping des tokens de marque (tokens.css) vers les
+ * variables sémantiques shadcn, consommé à l'identique par les deux apps
+ * (donor-app, infrastructure) pour empêcher toute dérive de thème.
+ *
+ * Pas de mode sombre : le brief impose une palette fixe unique.
+ *
+ * Hiérarchie de surfaces : fond de page blanc cassé chaud (dérivé du beige
+ * de marque via color-mix — aucune couleur hors palette), cartes blanches
+ * qui s'en détachent, bordures beige rehaussées d'encre. Le texte secondaire
+ * est une encre adoucie réellement distincte du texte principal.
+ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-display: var(--font-anton);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+:root {
+  --background: color-mix(in srgb, var(--color-beige) 35%, var(--color-white));
+  --foreground: var(--color-ink);
+  --card: var(--color-white);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-dred);
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-beige);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-beige);
+  --muted-foreground: color-mix(in srgb, var(--color-ink) 62%, var(--color-white));
+  --accent: var(--color-beige);
+  --accent-foreground: var(--color-dred);
+  --destructive: var(--color-dred-dark);
+  --border: color-mix(in srgb, var(--color-ink) 10%, var(--color-beige));
+  --input: color-mix(in srgb, var(--color-ink) 10%, var(--color-beige));
+  --ring: var(--color-dred);
+  --radius: 0.75rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
