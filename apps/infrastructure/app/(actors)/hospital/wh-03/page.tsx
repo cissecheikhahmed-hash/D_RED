@@ -45,7 +45,7 @@ export default function FormulaireUrgencePage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-4 sm:p-6">
       <Card>
         <CardHeader>
           <CardTitle>Urgence éclair</CardTitle>

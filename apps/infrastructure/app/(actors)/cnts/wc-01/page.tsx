@@ -41,7 +41,7 @@ export default function SupervisionPage() {
   const maintenant = useNow();
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <h1 className="text-2xl font-semibold">Supervision nationale</h1>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -85,7 +85,7 @@ export default function SupervisionPage() {
                     {formatRelativeTime(demande.createdAt, maintenant)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   {candidats.length > 1 && <Badge variant="outline">{candidats.length} candidats</Badge>}
                   <DemandeStatusBadge status={demande.status} />
                   {aTraiter && (

@@ -26,7 +26,7 @@ export default function PolitiquesPage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <h1 className="text-2xl font-semibold">Decision Policies</h1>
       <Card>
         <CardHeader>

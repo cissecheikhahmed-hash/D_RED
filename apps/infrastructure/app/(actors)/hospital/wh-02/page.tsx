@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const maintenant = useNow();
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Demandes</h1>
@@ -71,7 +71,7 @@ export default function DashboardPage() {
             className="cursor-pointer transition-colors hover:bg-secondary"
             onClick={() => router.push(`/hospital/wh-04/${demande.id}`)}
           >
-            <CardContent className="flex items-center justify-between gap-3 pt-6">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <p className="font-display text-xl text-primary">{demande.groupeSanguin}</p>

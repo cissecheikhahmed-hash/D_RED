@@ -76,7 +76,7 @@ export default function TimelinePage() {
     demande.niveauUrgence === "CRITIQUE" && STATUTS_PHASE_RECHERCHE.has(demande.status);
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="font-display text-2xl text-primary">{demande.groupeSanguin}</h1>

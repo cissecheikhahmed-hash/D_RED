@@ -28,7 +28,7 @@ export default function ScanReceptionPage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
+    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Scan réception</h1>
         <Button variant="ghost" size="sm" onClick={() => router.push("/hospital/wh-02")}>

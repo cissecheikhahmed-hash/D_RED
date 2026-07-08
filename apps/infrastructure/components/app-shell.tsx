@@ -33,7 +33,7 @@ export function AppShell({ title, nav, actions, children }: AppShellProps) {
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-3">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/" className="font-display text-xl leading-none text-primary">
               D.RED
@@ -47,7 +47,7 @@ export function AppShell({ title, nav, actions, children }: AppShellProps) {
           </div>
         </div>
         {nav && nav.length > 0 && (
-          <nav className="mx-auto flex w-full max-w-5xl gap-1 px-6">
+          <nav className="mx-auto flex w-full max-w-5xl gap-1 overflow-x-auto px-4 sm:px-6">
             {nav.map((item) => {
               const actif = [item.href, ...(item.activePrefixes ?? [])].some((prefix) =>
                 pathname.startsWith(prefix),
@@ -57,7 +57,7 @@ export function AppShell({ title, nav, actions, children }: AppShellProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "-mb-px border-b-2 px-3 py-2 text-sm transition-colors",
+                    "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors",
                     actif
                       ? "border-primary font-medium text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
