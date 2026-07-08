@@ -81,7 +81,10 @@ router.post("/missions/:missionId/accepter", (req, res) => {
   mission.status = "PRE_RESERVED";
   mission.questionnaire = req.body?.questionnaire;
   demande.status = "PRE_RESERVED";
-  demande.donneurAssigneId = mission.donneurId;
+  // donneurAssigneId n'est fixé qu'à la confirmation CNTS (pas ici) : avec le
+  // Niveau Critique, plusieurs candidats peuvent accepter en parallèle
+  // (Scénario E) — l'assigner dès l'acceptation afficherait prématurément
+  // le mauvais donneur comme "assigné" côté WH-04 pendant la comparaison.
   broadcastState();
   res.json(mission);
 });

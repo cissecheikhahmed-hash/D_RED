@@ -1,4 +1,4 @@
-import type { Demande, Mission, MissionStatus } from "@d-red/types";
+import type { Demande, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
 import { distanceKm, generateId, RADIUS_WAVES_KM } from "@d-red/utils";
 import { store } from "./store.js";
 import { demoClock } from "./demoClock.js";
@@ -55,20 +55,55 @@ function donneurOccupeAilleurs(donneurId: string, demandeId: string): boolean {
 }
 
 /**
+ * Nombre de candidats notifiés simultanément par demande. Le Niveau Critique
+ * cherche infrastructure ET donneurs "simultanément" (Phase 2) : on traduit
+ * ça en contactant 2 donneurs à la fois plutôt qu'un seul en séquence — le
+ * premier qui est confirmé par le CNTS (WC-02) l'emporte, les autres sont
+ * éjectés (Scénario E). Les niveaux Standard/Prioritaire restent séquentiels
+ * (un candidat à la fois), moins urgents.
+ */
+const CANDIDATS_SIMULTANES: Record<NiveauUrgence, number> = {
+  STANDARD: 1,
+  PRIORITAIRE: 1,
+  CRITIQUE: 2,
+};
+
+/**
+ * Statuts qui excluent définitivement un donneur d'être re-sollicité pour
+ * CETTE demande — uniquement quand c'est SA propre décision (refus,
+ * désistement) ou qu'il est toujours actif dessus. EJECTED est
+ * volontairement absent : avec 2 candidats simultanés (Critique), un
+ * donneur éjecté ne l'est que parce qu'un concurrent a été confirmé en
+ * premier, pas par choix — il redevient un candidat valable si le donneur
+ * confirmé se désiste ensuite (Scénario D + E combinés).
+ */
+const STATUTS_EXCLUANT_RESOLLICITATION = new Set<MissionStatus>([
+  "NOTIFIED",
+  "PRE_RESERVED",
+  "EN_ROUTE",
+  "ARRIVED",
+  "DONATION_COMPLETED",
+  "REFUSED",
+  "CANCELLED",
+]);
+
+/**
  * Sélectionne le donneur vérifié disponible compatible avec la demande, pas
- * encore sollicité (ni refusé/éjecté/annulé) pour celle-ci, en respectant
+ * encore sollicité (ni refusé ni annulé) pour celle-ci, en respectant
  * les vagues de rayon progressives (WC-03/Phase 2) : on prend le plus proche
  * dans la plus petite vague qui contient au moins un candidat, plutôt que
- * le plus proche absolu sans limite de distance. Conformément à la
- * résolution WC-02 (popup séquentiel unique), un seul donneur est notifié
- * à la fois — jamais une vague groupée de plusieurs candidats.
+ * le plus proche absolu sans limite de distance.
  */
 function trouverProchainCandidat(demande: Demande) {
   const etablissement = store.etablissements.find((e) => e.id === demande.etablissementId);
   if (!etablissement) return undefined;
 
   const missionsExistantes = store.missionsForDemande(demande.id);
-  const donneursDejaSollicites = new Set(missionsExistantes.map((m) => m.donneurId));
+  const donneursDejaSollicites = new Set(
+    missionsExistantes
+      .filter((m) => STATUTS_EXCLUANT_RESOLLICITATION.has(m.status))
+      .map((m) => m.donneurId),
+  );
 
   const eligibles = store.donneurs
     .filter(
@@ -89,27 +124,35 @@ function trouverProchainCandidat(demande: Demande) {
   return undefined;
 }
 
+/**
+ * Complète le nombre de candidats activement notifiés jusqu'à la cible du
+ * niveau d'urgence (2 pour Critique, 1 sinon) — pas une notification isolée.
+ * Appelée aussi bien à la recherche initiale qu'après un refus/éjection
+ * (relance), elle ne fait rien si la cible est déjà atteinte.
+ */
 export function notifierProchainDonneur(demandeId: string): void {
   const demande = store.getDemande(demandeId);
   if (!demande) return;
   if (demande.status !== "SCANNING_INFRAS" && demande.status !== "DONORS_NOTIFIED") return;
 
-  const candidat = trouverProchainCandidat(demande);
-  if (!candidat) {
-    // Aucun donneur trouvé dans le rayon disponible — la demande reste en recherche.
-    demande.status = "DONORS_NOTIFIED";
-    broadcastState();
-    return;
+  const cible = CANDIDATS_SIMULTANES[demande.niveauUrgence];
+  let actifs = store.missionsForDemande(demande.id).filter((m) => m.status === "NOTIFIED").length;
+
+  while (actifs < cible) {
+    const candidat = trouverProchainCandidat(demande);
+    if (!candidat) break;
+
+    const mission: Mission = {
+      id: generateId("mis"),
+      demandeId: demande.id,
+      donneurId: candidat.id,
+      status: "NOTIFIED",
+      notifiedAt: new Date().toISOString(),
+    };
+    store.missions.push(mission);
+    actifs++;
   }
 
-  const mission: Mission = {
-    id: generateId("mis"),
-    demandeId: demande.id,
-    donneurId: candidat.id,
-    status: "NOTIFIED",
-    notifiedAt: new Date().toISOString(),
-  };
-  store.missions.push(mission);
   demande.status = "DONORS_NOTIFIED";
   broadcastState();
 }

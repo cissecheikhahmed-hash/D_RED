@@ -229,6 +229,58 @@ async function testScenarioD() {
   assert(Boolean(nouveauDonneur), "un nouveau donneur est notifié immédiatement (re-recherche sans délai)");
 }
 
+// --- Scénario E : Niveau Critique notifie 2 candidats simultanément, CNTS compare et choisit ---
+async function testScenarioE() {
+  console.log("\n=== Scénario E : comparaison multi-donneurs (Niveau Critique) ===");
+  await restart();
+  await resoudreDemandeJusquauBout("dem_4", "mis_dem4_aissatou");
+
+  const { data: demande } = await post("/demandes", {
+    etablissementId: "etab_hopital_principal_dakar",
+    groupeSanguin: "O-",
+    produit: "SANG_TOTAL",
+    niveauUrgence: "CRITIQUE",
+  });
+
+  await sleep(3000);
+  const { data: state1 } = await get("/state");
+  const notifiees = state1.missions.filter((m) => m.demandeId === demande.id && m.status === "NOTIFIED");
+  assert(notifiees.length === 2, "2 candidats sont notifiés simultanément pour le Niveau Critique");
+  if (notifiees.length < 2) return;
+
+  await post(`/missions/${notifiees[0].id}/accepter`, {
+    questionnaire: { dateDernierDon: null, voyageRecent: false, traitementEnCours: false, seSentBien: true },
+  });
+  await post(`/missions/${notifiees[1].id}/accepter`, {
+    questionnaire: { dateDernierDon: null, voyageRecent: false, traitementEnCours: false, seSentBien: true },
+  });
+
+  const { data: state2 } = await get("/state");
+  const preReservees = state2.missions.filter(
+    (m) => m.demandeId === demande.id && m.status === "PRE_RESERVED",
+  );
+  assert(preReservees.length === 2, "les deux candidats peuvent accepter en parallèle");
+  assert(
+    state2.demandes.find((d) => d.id === demande.id)?.donneurAssigneId === undefined,
+    "aucun donneur assigné tant que le CNTS n'a pas choisi entre les deux",
+  );
+
+  await post(`/demandes/${demande.id}/confirmer`, { missionId: notifiees[0].id });
+  const { data: state3 } = await get("/state");
+  assert(
+    state3.missions.find((m) => m.id === notifiees[0].id)?.status === "EN_ROUTE",
+    "le candidat choisi passe EN_ROUTE",
+  );
+  assert(
+    state3.missions.find((m) => m.id === notifiees[1].id)?.status === "EJECTED",
+    "l'autre candidat est éjecté automatiquement",
+  );
+  assert(
+    state3.demandes.find((d) => d.id === demande.id)?.donneurAssigneId === notifiees[0].donneurId,
+    "le donneur assigné correspond bien à celui confirmé par le CNTS",
+  );
+}
+
 // --- Scénario F : rayon épuisé, aucun donneur disponible ---
 async function testScenarioF() {
   console.log("\n=== Scénario F : aucun donneur disponible ===");
@@ -345,6 +397,7 @@ async function main() {
     testScenarioB,
     testScenarioC,
     testScenarioD,
+    testScenarioE,
     testScenarioF,
     testScenarioG,
     testDecisionPolicies,
