@@ -28,7 +28,10 @@ export default function AttenteRegulationPage() {
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
       <Card>
         <CardContent className="flex flex-col items-center gap-3 pt-6">
-          <div className="size-3 animate-pulse rounded-full bg-primary" />
+          <div className="relative flex size-12 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-primary/20 [animation-duration:1.8s]" />
+            <span className="size-3 rounded-full bg-primary" />
+          </div>
           <p className="font-medium">En attente de validation par la régulation CNTS</p>
           <p className="text-sm text-muted-foreground">
             Un opérateur confirme votre pré-réservation. Cet écran se met à jour automatiquement.

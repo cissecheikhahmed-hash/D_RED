@@ -65,6 +65,7 @@ router.post("/demandes", (req, res) => {
     return;
   }
 
+  const creeLe = new Date().toISOString();
   const demande: Demande = {
     id: generateId("dem"),
     etablissementId,
@@ -72,7 +73,8 @@ router.post("/demandes", (req, res) => {
     produit,
     niveauUrgence,
     status: "CREATED",
-    createdAt: new Date().toISOString(),
+    createdAt: creeLe,
+    historiqueStatuts: { CREATED: creeLe },
   };
   store.demandes.push(demande);
   demarrerDemande(demande);

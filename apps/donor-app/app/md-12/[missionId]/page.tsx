@@ -31,7 +31,7 @@ export default function QrCodePage() {
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
       <div>
-        <h1 className="text-xl font-semibold">Présentez ce code à l&apos;accueil</h1>
+        <h1 className="text-2xl font-semibold">Présentez ce code à l&apos;accueil</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           L&apos;équipe sur place scanne ce QR pour confirmer votre arrivée.
         </p>

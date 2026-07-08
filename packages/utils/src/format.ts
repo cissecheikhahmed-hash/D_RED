@@ -22,6 +22,14 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   return formatDateFr(iso);
 }
 
+/** Heure locale courte (HH:MM) — horodatage des étapes de timeline. */
+export function formatHeureFr(iso: string): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
 export function formatEtaMinutes(minutes: number): string {
   return `${minutes} min`;
 }

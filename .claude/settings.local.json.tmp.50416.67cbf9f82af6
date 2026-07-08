@@ -7,7 +7,9 @@
       "Bash(git commit -q -m 'App shell Infrastructure : topbar de marque, identité d'\\\\''acteur, onglets, témoin temps réel *)",
       "Skill(dataviz)",
       "Bash(git commit -q -m 'Écrans jury : KPI cards, timeline verticale animée, alerte mission renforcée *)",
-      "Bash(git commit -q -m 'Micro-polish : skeletons de chargement, états succès, textes crédibles, harmonisation *)"
+      "Bash(git commit -q -m 'Micro-polish : skeletons de chargement, états succès, textes crédibles, harmonisation *)",
+      "Bash(pkill -f \"dist/index.js\")",
+      "Bash(git commit -q -m 'Le moteur horodate chaque transition de statut ; la timeline WH-04 les affiche *)"
     ]
   }
 }

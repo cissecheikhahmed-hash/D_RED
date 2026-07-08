@@ -1,4 +1,4 @@
-import type { Demande, Donneur, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
+import type { Demande, DemandeStatus, Donneur, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
 import { distanceKm, generateId, RADIUS_WAVES_KM } from "@d-red/utils";
 import { store } from "./store.js";
 import { demoClock } from "./demoClock.js";
@@ -7,10 +7,23 @@ import { policies } from "./policies.js";
 
 const DELAI_RELANCE_MS = 1200;
 
+/**
+ * Unique point de passage des transitions de statut d'une demande : mémorise
+ * l'heure d'entrée dans chaque statut (timeline WH-04). Un simple re-passage
+ * par le même statut (ex. top-up de candidats en DONORS_NOTIFIED) ne bouge
+ * pas l'horodatage.
+ */
+export function changerStatutDemande(demande: Demande, status: DemandeStatus): void {
+  if (demande.status !== status) {
+    (demande.historiqueStatuts ??= {})[status] = new Date().toISOString();
+  }
+  demande.status = status;
+}
+
 export function demarrerDemande(demande: Demande): void {
   broadcastState();
   demoClock.schedule(() => {
-    demande.status = "SCANNING_INFRAS";
+    changerStatutDemande(demande, "SCANNING_INFRAS");
     broadcastState();
     demoClock.schedule(() => {
       // Niveau Standard : recherche infrastructure uniquement (Phase 2) —
@@ -18,7 +31,7 @@ export function demarrerDemande(demande: Demande): void {
       // jamais mobilisé. C'est le second "happy path" (Scénario C),
       // distinct de la mobilisation donneur des niveaux Prioritaire/Critique.
       if (demande.niveauUrgence === "STANDARD") {
-        demande.status = "CLOSED";
+        changerStatutDemande(demande, "CLOSED");
         broadcastState();
         return;
       }
@@ -153,7 +166,7 @@ export function notifierProchainDonneur(demandeId: string): void {
     actifs++;
   }
 
-  demande.status = "DONORS_NOTIFIED";
+  changerStatutDemande(demande, "DONORS_NOTIFIED");
   broadcastState();
 }
 
@@ -178,7 +191,7 @@ export function accepterMission(
   mission.status = "PRE_RESERVED";
   mission.questionnaire = questionnaire;
   // donneurAssigneId n'est fixé qu'à la confirmation CNTS, voir confirmerMission.
-  demande.status = "PRE_RESERVED";
+  changerStatutDemande(demande, "PRE_RESERVED");
 }
 
 export function refuserMission(mission: Mission): void {
@@ -187,7 +200,7 @@ export function refuserMission(mission: Mission): void {
 
 export function confirmerMission(demande: Demande, mission: Mission): void {
   mission.status = "EN_ROUTE";
-  demande.status = "EN_ROUTE";
+  changerStatutDemande(demande, "EN_ROUTE");
   demande.donneurAssigneId = mission.donneurId;
   for (const autre of store.missionsForDemande(demande.id)) {
     if (autre.id !== mission.id && (autre.status === "NOTIFIED" || autre.status === "PRE_RESERVED")) {
@@ -205,24 +218,24 @@ export function ejecterMission(demande: Demande, mission: Mission): void {
 
 export function annulerMissionEnCours(demande: Demande, mission: Mission): void {
   mission.status = "CANCELLED";
-  demande.status = "DONORS_NOTIFIED";
+  changerStatutDemande(demande, "DONORS_NOTIFIED");
   delete demande.donneurAssigneId;
 }
 
 export function marquerArrivee(demande: Demande): void {
-  demande.status = "ARRIVED";
+  changerStatutDemande(demande, "ARRIVED");
   const mission = store.missionsForDemande(demande.id).find((m) => m.status === "EN_ROUTE");
   if (mission) mission.status = "ARRIVED";
 }
 
 export function marquerDonEffectue(demande: Demande): void {
-  demande.status = "DONATION_COMPLETED";
+  changerStatutDemande(demande, "DONATION_COMPLETED");
   const mission = store.missionsForDemande(demande.id).find((m) => m.status === "ARRIVED");
   if (mission) mission.status = "DONATION_COMPLETED";
 }
 
 export function envoyerBilan(demande: Demande, mission: Mission, donneur: Donneur): void {
-  demande.status = "CLOSED";
+  changerStatutDemande(demande, "CLOSED");
   donneur.nombreDonsEffectues += 1;
   store.resultats.push({
     id: generateId("res"),

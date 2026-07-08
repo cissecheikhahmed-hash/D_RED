@@ -47,4 +47,9 @@ export interface Demande {
   createdAt: string;
   /** Renseigné une fois qu'un donneur est pré-réservé/assigné à la demande. */
   donneurAssigneId?: string;
+  /**
+   * Heure d'entrée dans chaque statut atteint (ISO), alimentée par le
+   * sync-server — nourrit l'horodatage des étapes de la timeline WH-04.
+   */
+  historiqueStatuts?: Partial<Record<DemandeStatus, string>>;
 }

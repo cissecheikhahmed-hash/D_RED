@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useDredStore } from "@d-red/sync-client";
 import { DEMANDE_STATUS_LABELS, type DemandeStatus } from "@d-red/types";
+import { formatHeureFr } from "@d-red/utils";
 import { DemandeStatusBadge, DotBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,7 @@ export default function TimelinePage() {
                     numero={i + 1}
                     etat={etat}
                     derniere={i === etapes.length - 1}
+                    horodatage={demande.historiqueStatuts?.[etape]}
                   />
                 );
               })}
@@ -154,11 +156,14 @@ function EtapeTimeline({
   numero,
   etat,
   derniere,
+  horodatage,
 }: {
   label: string;
   numero: number;
   etat: EtatEtape;
   derniere: boolean;
+  /** Heure d'entrée dans le statut (ISO), si le serveur l'a enregistrée. */
+  horodatage?: string | undefined;
 }) {
   return (
     <li className="flex gap-3">
@@ -183,7 +188,7 @@ function EtapeTimeline({
           <span className={`w-px flex-1 ${etat === "faite" ? "bg-primary/40" : "bg-border"}`} />
         )}
       </div>
-      <div className={`pt-1 ${derniere ? "" : "pb-6"}`}>
+      <div className={`flex flex-1 items-baseline justify-between gap-3 pt-1 ${derniere ? "" : "pb-6"}`}>
         <span
           className={
             etat === "courante"
@@ -194,9 +199,14 @@ function EtapeTimeline({
           }
         >
           {label}
+          {etat === "courante" && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">en cours…</span>
+          )}
         </span>
-        {etat === "courante" && (
-          <span className="ml-2 text-xs text-muted-foreground">en cours…</span>
+        {horodatage && etat !== "a-venir" && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {formatHeureFr(horodatage)}
+          </span>
         )}
       </div>
     </li>

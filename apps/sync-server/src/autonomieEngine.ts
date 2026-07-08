@@ -6,6 +6,7 @@ import { broadcastState } from "./realtime.js";
 import { demoClock } from "./demoClock.js";
 import {
   accepterMission,
+  changerStatutDemande,
   confirmerMission,
   demarrerDemande,
   envoyerBilan,
@@ -41,6 +42,7 @@ function auHasard<T>(tableau: readonly T[]): T {
 function creerDemandeAleatoire(): Demande {
   const groupeSanguin =
     Math.random() < 0.85 ? auHasard(GROUPES_AVEC_DONNEUR_VIABLE) : auHasard(TOUS_LES_GROUPES);
+  const creeLe = new Date().toISOString();
   return {
     id: generateId("dem"),
     etablissementId: auHasard(store.etablissements).id,
@@ -48,7 +50,8 @@ function creerDemandeAleatoire(): Demande {
     produit: auHasard(PRODUITS),
     niveauUrgence: auHasard(NIVEAUX),
     status: "CREATED",
-    createdAt: new Date().toISOString(),
+    createdAt: creeLe,
+    historiqueStatuts: { CREATED: creeLe },
   };
 }
 
@@ -61,10 +64,10 @@ function tick(): void {
   // pour toujours et empêcheraient la boucle infinie de jamais démarrer.
   for (const demande of store.demandes) {
     if (demande.status === "CREATED") {
-      demande.status = "SCANNING_INFRAS";
+      changerStatutDemande(demande, "SCANNING_INFRAS");
     } else if (demande.status === "SCANNING_INFRAS") {
       if (demande.niveauUrgence === "STANDARD") {
-        demande.status = "CLOSED";
+        changerStatutDemande(demande, "CLOSED");
       } else {
         notifierProchainDonneur(demande.id);
       }
@@ -106,7 +109,7 @@ function tick(): void {
       .missionsForDemande(demande.id)
       .filter((m) => m.status === "NOTIFIED" || m.status === "PRE_RESERVED");
     if (encoreActifs.length === 0) {
-      demande.status = "CLOSED";
+      changerStatutDemande(demande, "CLOSED");
     }
   }
 
