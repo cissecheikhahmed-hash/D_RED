@@ -5,6 +5,7 @@ import { useDredStore } from "@d-red/sync-client";
 import { DEMANDE_STATUS_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
 import { MissionStatusBadge } from "@d-red/ui/components/status-badges";
 import { History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ export default function HistoriquePage() {
   const missions = useDredStore((s) => s.missions);
   const demandes = useDredStore((s) => s.demandes);
   const etablissements = useDredStore((s) => s.etablissements);
+  const pret = useDredStore((s) => s.pret);
 
   const donneur = donneurs.find((d) => d.id === session.donneurId);
   const mesMissions = missions
@@ -38,7 +40,8 @@ export default function HistoriquePage() {
       {donneur && <Badge variant="secondary">{donneur.nombreDonsEffectues} dons effectués</Badge>}
 
       <div className="flex flex-col gap-3">
-        {mesMissions.length === 0 && (
+        {!pret && <ListSkeleton />}
+        {pret && mesMissions.length === 0 && (
           <EmptyState icon={History} message="Aucune mission pour le moment." />
         )}
         {mesMissions.map((mission) => {

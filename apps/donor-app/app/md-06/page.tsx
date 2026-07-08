@@ -60,7 +60,7 @@ export default function DashboardPage() {
               onCheckedChange={basculerDisponibilite}
             />
           </div>
-          <p className="text-xs text-muted-foreground">Position simulée : Dakar</p>
+          <p className="text-xs text-muted-foreground">Zone de veille : Dakar</p>
           {!donneur && (
             <p className="text-xs text-muted-foreground">
               Compte non vérifié — aucune mobilisation possible pour l&apos;instant.

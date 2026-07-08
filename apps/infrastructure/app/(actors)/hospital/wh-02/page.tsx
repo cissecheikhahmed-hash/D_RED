@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { formatRelativeTime } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
 import { StatCard } from "@d-red/ui/components/stat-card";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { useNow } from "@d-red/ui/hooks/use-now";
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const { etablissementId } = useEtablissementSession();
   const etablissements = useDredStore((s) => s.etablissements);
   const demandes = useDredStore((s) => s.demandes);
+  const pret = useDredStore((s) => s.pret);
   const etablissement = etablissements.find((e) => e.id === etablissementId);
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="Demandes actives" value={actives.length} icon={Activity} />
         <StatCard
           label="Critiques en cours"
@@ -59,7 +61,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {mesDemandes.length === 0 && (
+        {!pret && <ListSkeleton />}
+        {pret && mesDemandes.length === 0 && (
           <EmptyState icon={Inbox} message="Aucune demande active pour cet établissement." />
         )}
         {mesDemandes.map((demande) => (

@@ -33,7 +33,7 @@ export default function OtpPage() {
       <div>
         <h1 className="text-2xl font-semibold">Code de vérification</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Code simulé envoyé au {telephone || "numéro précédent"} — saisissez n&apos;importe quel code à 4 chiffres.
+          Un code à 4 chiffres a été envoyé par SMS au {telephone || "numéro saisi"}.
         </p>
       </div>
       <div className="flex flex-col gap-1.5">

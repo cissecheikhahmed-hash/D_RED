@@ -13,7 +13,7 @@ const SLIDES = [
   {
     Illustration: AlerteIllustration,
     titre: "Sauvez des vies en quelques minutes",
-    texte: "D.Red vous alerte quand un hôpital a besoin de votre groupe sanguin, à proximité.",
+    texte: "D.RED vous alerte quand un hôpital a besoin de votre groupe sanguin, à proximité.",
   },
   {
     Illustration: DisponibiliteIllustration,

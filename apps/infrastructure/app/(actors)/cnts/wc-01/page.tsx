@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useDredStore } from "@d-red/sync-client";
 import { formatRelativeTime } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
 import { StatCard } from "@d-red/ui/components/stat-card";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { useNow } from "@d-red/ui/hooks/use-now";
@@ -19,6 +20,7 @@ export default function SupervisionPage() {
   const etablissements = useDredStore((s) => s.etablissements);
   const missions = useDredStore((s) => s.missions);
   const donneurs = useDredStore((s) => s.donneurs);
+  const pret = useDredStore((s) => s.pret);
   const [dialogDemandeId, setDialogDemandeId] = useState<string | null>(null);
 
   const demandesTriees = [...demandes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -60,7 +62,8 @@ export default function SupervisionPage() {
       </div>
 
       <div className="flex flex-col gap-3">
-        {demandesTriees.length === 0 && (
+        {!pret && <ListSkeleton />}
+        {pret && demandesTriees.length === 0 && (
           <EmptyState icon={ShieldCheck} message="Aucune demande active sur le réseau national." />
         )}
         {demandesTriees.map((demande) => {

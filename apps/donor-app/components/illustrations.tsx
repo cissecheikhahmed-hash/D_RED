@@ -8,7 +8,7 @@ interface IllustrationProps {
   className?: string;
 }
 
-/** Logo goutte de sang stylisée — brand kit officiel D.Red, utilisée sur MD-01 (fond rouge). */
+/** Logo goutte de sang stylisée — brand kit officiel D.RED, utilisée sur MD-01 (fond rouge). */
 export function BloodDropMark({ className }: IllustrationProps) {
   return (
     <svg viewBox="0 0 100 120" className={className} fill="none" aria-hidden="true">

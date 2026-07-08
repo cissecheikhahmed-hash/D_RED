@@ -7,7 +7,7 @@ export default function RoleSelectorPage() {
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
-        <h1 className="font-display text-4xl text-primary">D.Red</h1>
+        <h1 className="font-display text-4xl text-primary">D.RED</h1>
         <p className="mt-1 text-sm text-muted-foreground">Choisissez la fenêtre à ouvrir</p>
       </div>
       <div className="grid w-full max-w-md gap-4">

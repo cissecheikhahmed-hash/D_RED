@@ -40,7 +40,7 @@ export default function GuidagePage() {
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-between p-6">
       <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-hidden rounded-xl bg-secondary">
         <GuidageIllustration className="w-full" />
-        <p className="text-sm text-muted-foreground">Position simulée — pas de carte réelle</p>
+        <p className="text-sm text-muted-foreground">Itinéraire vers {etablissement.nom}</p>
       </div>
 
       <div className="flex flex-col items-center gap-1 py-4 text-center">
