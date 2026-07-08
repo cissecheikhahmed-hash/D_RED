@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { dredApi } from "@d-red/sync-client";
-import { Pause, Play, RotateCcw, StepForward } from "lucide-react";
+import { Bot, Pause, Play, RotateCcw, StepForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 
 /**
  * Panneau présentateur du Mode Démo — jamais lié depuis une navigation
@@ -14,10 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  */
 export default function ModeDemoPage() {
   const [paused, setPaused] = useState<boolean | null>(null);
+  const [autonome, setAutonome] = useState<boolean | null>(null);
   const [dernierPas, setDernierPas] = useState<string | null>(null);
 
   useEffect(() => {
     void dredApi.modeDemo.status().then((s) => setPaused(s.paused));
+    void dredApi.modeAutonome.status().then((s) => setAutonome(s.actif));
   }, []);
 
   async function jouer() {
@@ -44,6 +47,12 @@ export default function ModeDemoPage() {
     const s = await dredApi.modeDemo.status();
     setPaused(s.paused);
     setDernierPas(null);
+  }
+
+  async function basculerAutonomie(actif: boolean) {
+    const s = actif ? await dredApi.modeAutonome.activer() : await dredApi.modeAutonome.desactiver();
+    setAutonome(s.actif);
+    if (actif) setPaused(false);
   }
 
   return (
@@ -79,6 +88,19 @@ export default function ModeDemoPage() {
           </div>
 
           {dernierPas && <p className="text-xs text-muted-foreground">{dernierPas}</p>}
+
+          <div className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div className="flex items-center gap-2">
+              <Bot className="size-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Mode Autonome</p>
+                <p className="text-xs text-muted-foreground">
+                  Le serveur joue seul les rôles Donneur/CNTS/Hôpital, en boucle infinie.
+                </p>
+              </div>
+            </div>
+            <Switch checked={autonome ?? false} onCheckedChange={basculerAutonomie} />
+          </div>
         </CardContent>
       </Card>
     </main>

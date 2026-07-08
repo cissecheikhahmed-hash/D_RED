@@ -1,4 +1,4 @@
-import type { Demande, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
+import type { Demande, Donneur, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
 import { distanceKm, generateId, RADIUS_WAVES_KM } from "@d-red/utils";
 import { store } from "./store.js";
 import { demoClock } from "./demoClock.js";
@@ -161,4 +161,74 @@ export function relancerApresRefusOuEjection(demandeId: string): void {
   demoClock.schedule(() => {
     notifierProchainDonneur(demandeId);
   }, DELAI_RELANCE_MS);
+}
+
+/**
+ * Mutations métier partagées entre les routes HTTP (déclenchées par un vrai
+ * humain sur les écrans MD/WH/WC) et la boucle du Mode Autonome
+ * (autonomieEngine.ts) — une seule implémentation de chaque règle, jamais
+ * dupliquée.
+ */
+
+export function accepterMission(
+  mission: Mission,
+  demande: Demande,
+  questionnaire: NonNullable<Mission["questionnaire"]>,
+): void {
+  mission.status = "PRE_RESERVED";
+  mission.questionnaire = questionnaire;
+  // donneurAssigneId n'est fixé qu'à la confirmation CNTS, voir confirmerMission.
+  demande.status = "PRE_RESERVED";
+}
+
+export function refuserMission(mission: Mission): void {
+  mission.status = "REFUSED";
+}
+
+export function confirmerMission(demande: Demande, mission: Mission): void {
+  mission.status = "EN_ROUTE";
+  demande.status = "EN_ROUTE";
+  demande.donneurAssigneId = mission.donneurId;
+  for (const autre of store.missionsForDemande(demande.id)) {
+    if (autre.id !== mission.id && (autre.status === "NOTIFIED" || autre.status === "PRE_RESERVED")) {
+      autre.status = "EJECTED";
+    }
+  }
+}
+
+export function ejecterMission(demande: Demande, mission: Mission): void {
+  mission.status = "EJECTED";
+  if (demande.donneurAssigneId === mission.donneurId) {
+    delete demande.donneurAssigneId;
+  }
+}
+
+export function annulerMissionEnCours(demande: Demande, mission: Mission): void {
+  mission.status = "CANCELLED";
+  demande.status = "DONORS_NOTIFIED";
+  delete demande.donneurAssigneId;
+}
+
+export function marquerArrivee(demande: Demande): void {
+  demande.status = "ARRIVED";
+  const mission = store.missionsForDemande(demande.id).find((m) => m.status === "EN_ROUTE");
+  if (mission) mission.status = "ARRIVED";
+}
+
+export function marquerDonEffectue(demande: Demande): void {
+  demande.status = "DONATION_COMPLETED";
+  const mission = store.missionsForDemande(demande.id).find((m) => m.status === "ARRIVED");
+  if (mission) mission.status = "DONATION_COMPLETED";
+}
+
+export function envoyerBilan(demande: Demande, mission: Mission, donneur: Donneur): void {
+  demande.status = "CLOSED";
+  donneur.nombreDonsEffectues += 1;
+  store.resultats.push({
+    id: generateId("res"),
+    missionId: mission.id,
+    donneurId: donneur.id,
+    envoyeAt: new Date().toISOString(),
+    canalEnvoiSimule: `Bilan envoyé par email chiffré à ${donneur.nom.split(" ")[0]?.toLowerCase()}***@exemple.sn`,
+  });
 }

@@ -390,6 +390,42 @@ async function testModeDemo() {
   assert(stateRestart.demandes.length === 8, "restart remet bien les 8 demandes de démo d'origine");
 }
 
+// --- Mode Autonome : boucle sans intervention humaine ---
+async function testModeAutonome() {
+  console.log("\n=== Mode Autonome : boucle sans intervention humaine ===");
+  await restart();
+
+  const { data: avantActivation } = await get("/state");
+  const totalAvant = avantActivation.demandes.length;
+
+  await post("/autonomie/activer");
+  const { data: statutActif } = await get("/autonomie/status");
+  assert(statutActif.actif === true, "activer bascule bien le statut à actif");
+
+  await sleep(9000);
+  const { data: apres9s } = await get("/state");
+  assert(
+    apres9s.demandes.length > totalAvant,
+    "de nouvelles demandes sont créées automatiquement sans aucune action humaine",
+  );
+  assert(
+    apres9s.donneurs.some((d) => d.nombreDonsEffectues > 0),
+    "au moins un donneur a un compteur de dons incrémenté (chaîne complète simulée jusqu'au bilan)",
+  );
+
+  await post("/autonomie/desactiver");
+  const { data: statutInactif } = await get("/autonomie/status");
+  assert(statutInactif.actif === false, "désactiver bascule bien le statut à inactif");
+
+  const { data: apresDesactivation } = await get("/state");
+  await sleep(4000);
+  const { data: unPeuPlusTard } = await get("/state");
+  assert(
+    unPeuPlusTard.demandes.length === apresDesactivation.demandes.length,
+    "plus aucune nouvelle demande n'est créée une fois désactivé",
+  );
+}
+
 async function main() {
   console.log(`Suite de tests contre ${BASE}`);
   const tests = [
@@ -402,6 +438,7 @@ async function main() {
     testScenarioG,
     testDecisionPolicies,
     testModeDemo,
+    testModeAutonome,
   ];
 
   for (const test of tests) {

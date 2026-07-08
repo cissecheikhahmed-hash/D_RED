@@ -113,12 +113,33 @@ d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
 Le cas H (voir `TODO.md`) reste bloqué : la doc produit ne définit jamais
 la règle médicale nécessaire pour l'implémenter correctement.
 
+## Mode Autonome
+
+Le serveur peut désormais tourner **sans aucune intervention humaine**
+(toggle sur `/demo`) : il simule lui-même MD-07/MD-08 (accepte 80%/refuse
+20%), WC-02 (confirme le premier candidat), WH-05 (scan réception) et WC-04
+(don effectué + bilan), puis enchaîne une nouvelle demande aléatoire dès
+qu'aucune n'est active — boucle infinie, idéale pour un stand sans
+présentateur. Réutilise exactement les mêmes fonctions métier que les
+routes HTTP (refactor `engine.ts`), aucune logique dupliquée.
+
+Deux bugs de blocage trouvés et corrigés pendant le test en conditions
+réelles (la boucle se figeait complètement sans eux) :
+- Les demandes seed (`dem_1`/`dem_2`) sont de simples instantanés jamais
+  passés par `demarrerDemande` — sans traitement dédié, elles restaient
+  bloquées en `CREATED`/`SCANNING_INFRAS` pour toujours.
+- Une demande dont le seul donneur compatible refuse (Scénario F, aucun
+  autre candidat possible) restait bloquée en `DONORS_NOTIFIED` indéfiniment
+  — le Mode Autonome l'abandonne désormais (clôture) pour ne pas bloquer le
+  cycle suivant, alors qu'un vrai présentateur choisirait juste d'en créer
+  une autre.
+
 ## Tests automatisés
 
 Suite d'intégration (`apps/sync-server/scripts/test-scenarios.mjs`,
-`pnpm --filter @d-red/sync-server test:scenarios`) : 38 assertions, tous les
-scénarios A/B/C/D/E/F/G + Decision Policies + Mode Démo, rejouables en
-quelques secondes contre le serveur réel — 38/38 au vert.
+`pnpm --filter @d-red/sync-server test:scenarios`) : 43 assertions, tous les
+scénarios A/B/C/D/E/F/G + Decision Policies + Mode Démo + Mode Autonome,
+rejouables en quelques secondes contre le serveur réel — 43/43 au vert.
 
 ## Bugs trouvés et corrigés pendant la QA utilisateur
 

@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import { router } from "./routes.js";
 import { attachIo } from "./realtime.js";
 import { store } from "./store.js";
+import { demarrerBoucleAutonome } from "./autonomieEngine.js";
 
 const PORT = 4000;
 
@@ -25,6 +26,8 @@ attachIo(io);
 io.on("connection", (socket) => {
   socket.emit("state:sync", store.snapshot());
 });
+
+demarrerBoucleAutonome();
 
 httpServer.listen(PORT, () => {
   console.log(`D.RED sync-server à l'écoute sur http://localhost:${PORT}`);

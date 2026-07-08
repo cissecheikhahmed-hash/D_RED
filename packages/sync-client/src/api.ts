@@ -98,3 +98,10 @@ export const modeDemo = {
   step: () => poster<{ advanced: boolean; paused: boolean }>("/demo/step"),
   restart: () => poster<{ ok: boolean }>("/demo/restart"),
 };
+
+// Mode Autonome — le serveur simule lui-même les décisions humaines, panneau présentateur uniquement
+export const modeAutonome = {
+  status: () => obtenir<{ actif: boolean }>("/autonomie/status"),
+  activer: () => poster<{ actif: boolean }>("/autonomie/activer"),
+  desactiver: () => poster<{ actif: boolean }>("/autonomie/desactiver"),
+};

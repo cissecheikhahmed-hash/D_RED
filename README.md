@@ -61,6 +61,11 @@ Ouvrez ensuite 2–3 fenêtres/onglets pour jouer les rôles Donneur, Hôpital e
 CNTS en simultané — c'est le mode de démonstration prévu (voir `CLAUDE.md`,
 section Core Loop).
 
+Un **Mode Autonome** existe aussi : le serveur peut simuler lui-même toutes
+les décisions humaines et enchaîner des demandes en boucle infinie, sans
+aucun acteur réel (utile pour un stand sans présentateur). Panneau caché sur
+`http://localhost:3001/demo` (jamais lié depuis une navigation visible).
+
 ## Vérifications
 
 ```bash
@@ -75,9 +80,10 @@ Avec le sync-server déjà démarré (`pnpm --filter @d-red/sync-server dev`) :
 pnpm --filter @d-red/sync-server test:scenarios
 ```
 
-Rejoue automatiquement les scénarios A-G, les Decision Policies (WC-03) et
-le Mode Démo contre le serveur réel. ⚠️ Remet l'état à zéro plusieurs fois
-pendant l'exécution — à ne pas lancer pendant une démo en cours.
+Rejoue automatiquement les scénarios A-G, les Decision Policies (WC-03), le
+Mode Démo et le Mode Autonome contre le serveur réel. ⚠️ Remet l'état à zéro
+plusieurs fois pendant l'exécution — à ne pas lancer pendant une démo en
+cours.
 
 ## Écrans
 

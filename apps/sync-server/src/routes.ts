@@ -4,8 +4,22 @@ import { generateId } from "@d-red/utils";
 import { store } from "./store.js";
 import { demoClock } from "./demoClock.js";
 import { broadcastState } from "./realtime.js";
-import { demarrerDemande, notifierProchainDonneur, relancerApresRefusOuEjection } from "./engine.js";
+import {
+  accepterMission,
+  annulerMissionEnCours,
+  confirmerMission,
+  demarrerDemande,
+  ejecterMission,
+  envoyerBilan,
+  marquerArrivee,
+  marquerDonEffectue,
+  notifierProchainDonneur,
+  refuserMission,
+  relancerApresRefusOuEjection,
+} from "./engine.js";
 import { policies } from "./policies.js";
+import { activerAutonomie, desactiverAutonomie } from "./autonomieEngine.js";
+import { autonomie } from "./autonomie.js";
 
 export const router: Router = Router();
 
@@ -78,13 +92,7 @@ router.post("/missions/:missionId/accepter", (req, res) => {
     return;
   }
 
-  mission.status = "PRE_RESERVED";
-  mission.questionnaire = req.body?.questionnaire;
-  demande.status = "PRE_RESERVED";
-  // donneurAssigneId n'est fixé qu'à la confirmation CNTS (pas ici) : avec le
-  // Niveau Critique, plusieurs candidats peuvent accepter en parallèle
-  // (Scénario E) — l'assigner dès l'acceptation afficherait prématurément
-  // le mauvais donneur comme "assigné" côté WH-04 pendant la comparaison.
+  accepterMission(mission, demande, req.body?.questionnaire);
   broadcastState();
   res.json(mission);
 });
@@ -96,7 +104,7 @@ router.post("/missions/:missionId/refuser", (req, res) => {
     res.status(409).json({ error: "Mission introuvable ou déjà traitée" });
     return;
   }
-  mission.status = "REFUSED";
+  refuserMission(mission);
   broadcastState();
   relancerApresRefusOuEjection(mission.demandeId);
   res.json(mission);
@@ -112,15 +120,7 @@ router.post("/demandes/:demandeId/confirmer", (req, res) => {
     return;
   }
 
-  mission.status = "EN_ROUTE";
-  demande.status = "EN_ROUTE";
-  demande.donneurAssigneId = mission.donneurId;
-
-  for (const autre of store.missionsForDemande(demande.id)) {
-    if (autre.id !== mission.id && (autre.status === "NOTIFIED" || autre.status === "PRE_RESERVED")) {
-      autre.status = "EJECTED";
-    }
-  }
+  confirmerMission(demande, mission);
   broadcastState();
   res.json(demande);
 });
@@ -135,10 +135,7 @@ router.post("/demandes/:demandeId/ejecter", (req, res) => {
     return;
   }
 
-  mission.status = "EJECTED";
-  if (demande.donneurAssigneId === mission.donneurId) {
-    delete demande.donneurAssigneId;
-  }
+  ejecterMission(demande, mission);
   broadcastState();
   relancerApresRefusOuEjection(demande.id);
   res.json(demande);
@@ -157,9 +154,7 @@ router.post("/missions/:missionId/annuler", (req, res) => {
     return;
   }
 
-  mission.status = "CANCELLED";
-  demande.status = "DONORS_NOTIFIED";
-  delete demande.donneurAssigneId;
+  annulerMissionEnCours(demande, mission);
   broadcastState();
   // Re-recherche immédiate (Scénario D) — contrairement au refus/éjection, pas de délai de relance.
   notifierProchainDonneur(demande.id);
@@ -173,9 +168,7 @@ router.post("/demandes/:demandeId/arrivee", (req, res) => {
     res.status(409).json({ error: "Demande introuvable ou pas en route" });
     return;
   }
-  demande.status = "ARRIVED";
-  const mission = store.missionsForDemande(demande.id).find((m) => m.status === "EN_ROUTE");
-  if (mission) mission.status = "ARRIVED";
+  marquerArrivee(demande);
   broadcastState();
   res.json(demande);
 });
@@ -187,9 +180,7 @@ router.post("/demandes/:demandeId/don-effectue", (req, res) => {
     res.status(409).json({ error: "Demande introuvable ou pas arrivée" });
     return;
   }
-  demande.status = "DONATION_COMPLETED";
-  const mission = store.missionsForDemande(demande.id).find((m) => m.status === "ARRIVED");
-  if (mission) mission.status = "DONATION_COMPLETED";
+  marquerDonEffectue(demande);
   broadcastState();
   res.json(demande);
 });
@@ -208,15 +199,7 @@ router.post("/demandes/:demandeId/bilan", (req, res) => {
     return;
   }
 
-  demande.status = "CLOSED";
-  donneur.nombreDonsEffectues += 1;
-  store.resultats.push({
-    id: generateId("res"),
-    missionId: mission.id,
-    donneurId: donneur.id,
-    envoyeAt: new Date().toISOString(),
-    canalEnvoiSimule: `Bilan envoyé par email chiffré à ${donneur.nom.split(" ")[0]?.toLowerCase()}***@exemple.sn`,
-  });
+  envoyerBilan(demande, mission, donneur);
   broadcastState();
   res.json(demande);
 });
@@ -246,4 +229,20 @@ router.post("/demo/restart", (_req, res) => {
   store.reset();
   broadcastState();
   res.json({ ok: true });
+});
+
+// Mode Autonome — le serveur simule lui-même les décisions humaines en boucle infinie
+router.get("/autonomie/status", (_req, res) => {
+  res.json({ actif: autonomie.actif });
+});
+
+router.post("/autonomie/activer", (_req, res) => {
+  activerAutonomie();
+  broadcastState();
+  res.json({ actif: autonomie.actif });
+});
+
+router.post("/autonomie/desactiver", (_req, res) => {
+  desactiverAutonomie();
+  res.json({ actif: autonomie.actif });
 });
