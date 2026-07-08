@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
-import { DEMANDE_STATUS_LABELS, MISSION_STATUS_LABELS } from "@d-red/types";
+import { DEMANDE_STATUS_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { MissionStatusBadge } from "@d-red/ui/components/status-badges";
 import { History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ export default function HistoriquePage() {
               <CardContent className="flex flex-col gap-1 pt-6">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">{etablissement?.nom ?? "Établissement"}</p>
-                  <Badge variant="outline">{MISSION_STATUS_LABELS[mission.status]}</Badge>
+                  <MissionStatusBadge status={mission.status} />
                 </div>
                 <p className="text-sm text-muted-foreground">{formatDateFr(mission.notifiedAt)}</p>
                 {demande && (

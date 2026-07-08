@@ -3,6 +3,7 @@
 import { dredApi, useDredStore } from "@d-red/sync-client";
 import type { Mission } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
+import { DotBadge } from "@d-red/ui/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,9 +91,9 @@ function CandidatCard({
       <p className="text-sm text-muted-foreground">{donneur.nombreDonsEffectues} dons effectués</p>
 
       {enAttente ? (
-        <Badge variant="outline" className="w-fit">
+        <DotBadge tone="waiting" pulse className="w-fit">
           En attente de réponse du donneur
-        </Badge>
+        </DotBadge>
       ) : (
         <>
           {mission.questionnaire && (

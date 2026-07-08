@@ -23,6 +23,7 @@
     "react": "^19"
   },
   "dependencies": {
+    "@d-red/types": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^1.23.0",
     "tailwind-merge": "^3.6.0"

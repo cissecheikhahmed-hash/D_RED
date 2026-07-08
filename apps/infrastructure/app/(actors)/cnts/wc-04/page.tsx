@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useDredStore, dredApi } from "@d-red/sync-client";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { FlaskConical, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -62,10 +63,12 @@ export default function ConsoleLaboPage() {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
             <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between pt-6">
-                <span className="font-medium">
-                  {demande.groupeSanguin} · {etablissement?.nom}
-                </span>
+              <CardContent className="flex items-center justify-between gap-3 pt-6">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg text-primary">{demande.groupeSanguin}</span>
+                  <span className="text-sm">{etablissement?.nom}</span>
+                  <UrgencyBadge niveau={demande.niveauUrgence} />
+                </div>
                 <Button
                   size="sm"
                   disabled={enCoursId === demande.id}
@@ -86,10 +89,12 @@ export default function ConsoleLaboPage() {
           const etablissement = etablissements.find((e) => e.id === demande.etablissementId);
           return (
             <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between pt-6">
-                <span className="font-medium">
-                  {demande.groupeSanguin} · {etablissement?.nom}
-                </span>
+              <CardContent className="flex items-center justify-between gap-3 pt-6">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg text-primary">{demande.groupeSanguin}</span>
+                  <span className="text-sm">{etablissement?.nom}</span>
+                  <UrgencyBadge niveau={demande.niveauUrgence} />
+                </div>
                 <Button
                   size="sm"
                   disabled={enCoursId === demande.id}

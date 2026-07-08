@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useDredStore } from "@d-red/sync-client";
-import { DEMANDE_STATUS_LABELS, NIVEAU_URGENCE_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,18 +39,18 @@ export default function SupervisionPage() {
           const aTraiter = candidats.some((m) => m.status === "PRE_RESERVED");
           return (
             <Card key={demande.id}>
-              <CardContent className="flex items-center justify-between pt-6">
-                <div>
-                  <p className="font-medium">
-                    {demande.groupeSanguin} · {etablissement?.nom}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {NIVEAU_URGENCE_LABELS[demande.niveauUrgence]} — {formatDateFr(demande.createdAt)}
-                  </p>
+              <CardContent className="flex items-center justify-between gap-3 pt-6">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-display text-xl text-primary">{demande.groupeSanguin}</p>
+                    <UrgencyBadge niveau={demande.niveauUrgence} />
+                  </div>
+                  <p className="text-sm">{etablissement?.nom}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateFr(demande.createdAt)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {candidats.length > 1 && <Badge variant="outline">{candidats.length} candidats</Badge>}
-                  <Badge variant="secondary">{DEMANDE_STATUS_LABELS[demande.status]}</Badge>
+                  <DemandeStatusBadge status={demande.status} />
                   {aTraiter && (
                     <Button size="sm" onClick={() => setDialogDemandeId(demande.id)}>
                       Traiter

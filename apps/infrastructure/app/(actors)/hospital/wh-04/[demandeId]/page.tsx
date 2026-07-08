@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useDredStore } from "@d-red/sync-client";
 import { DEMANDE_STATUS_LABELS, type DemandeStatus } from "@d-red/types";
+import { DemandeStatusBadge, DotBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,10 +76,12 @@ export default function TimelinePage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          {demande.groupeSanguin} — {DEMANDE_STATUS_LABELS[demande.status]}
-        </h1>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-display text-2xl text-primary">{demande.groupeSanguin}</h1>
+          <UrgencyBadge niveau={demande.niveauUrgence} />
+          <DemandeStatusBadge status={demande.status} />
+        </div>
         <Button variant="ghost" size="sm" onClick={() => router.push("/hospital/wh-02")}>
           Retour
         </Button>
@@ -171,9 +174,12 @@ function RecherchePorallele({
                 return (
                   <li key={m.id} className="flex items-center justify-between text-xs">
                     <span>{donneur ? masquerNom(donneur.nom) : "Donneur"}</span>
-                    <Badge variant={m.status === "PRE_RESERVED" ? "default" : "outline"}>
+                    <DotBadge
+                      tone={m.status === "PRE_RESERVED" ? "success" : "waiting"}
+                      pulse={m.status !== "PRE_RESERVED"}
+                    >
                       {m.status === "PRE_RESERVED" ? "A accepté" : "En attente"}
-                    </Badge>
+                    </DotBadge>
                   </li>
                 );
               })}

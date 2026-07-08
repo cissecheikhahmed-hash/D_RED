@@ -2,6 +2,10 @@
 @import "@d-red/ui/styles/tokens.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Les composants de @d-red/ui vivent dans node_modules (hors du scan
+   Tailwind par défaut) : sans ce @source, leurs classes ne seraient
+   générées que si une page de l'app utilise par hasard les mêmes. */
+@source "../../../packages/ui/src";
 
 /**
  * Thème shadcn/ui mappé sur la palette D.RED — pas de mode sombre : le
