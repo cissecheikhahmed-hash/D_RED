@@ -81,9 +81,14 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <Button variant="outline" onClick={() => router.push("/md-14")}>
-        Voir mon historique
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button variant="outline" onClick={() => router.push("/md-14")}>
+          Voir mon historique
+        </Button>
+        <Button variant="outline" onClick={() => router.push("/md-10")}>
+          Voir mes récompenses
+        </Button>
+      </div>
     </main>
   );
 }

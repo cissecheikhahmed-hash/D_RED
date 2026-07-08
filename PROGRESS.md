@@ -26,6 +26,7 @@ manuellement (scénarios A et D) et via Mode Démo (pause/step/play/restart).
 | MD-07 | Fiche mission critique                | ✅ |
 | MD-08 | Questionnaire d'éligibilité rapide    | ✅ |
 | MD-09 | Attente régulation CNTS               | ✅ |
+| MD-10 | Récompenses (paliers de fidélité)      | ✅ |
 | MD-11 | Guidage GPS simulé + désengagement    | ✅ |
 | MD-12 | QR code                               | ✅ |
 | MD-13 | Clôture / gratification               | ✅ |

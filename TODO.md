@@ -6,11 +6,12 @@ le détail des décisions produit).
 
 ## Fonctionnalités produit
 
-- **Récompenses / fidélisation** — seul un compteur simple de dons est
-  implémenté (`Donneur.nombreDonsEffectues`). Le système de récompenses
-  complet évoqué en Phase 2 n'est pas construit.
 - **Documents** (nav donneur) — fonctionnalité mentionnée mais jamais
   clarifiée dans les phases de doc produit.
+- **Récompenses (partie construite le 2026-07-08)** : paliers de fidélité
+  (Bronze/Argent/Or/Platine) calculés à partir de `nombreDonsEffectues`,
+  écran MD-10. Reste hors périmètre : notifications de changement de palier,
+  vraies récompenses/avantages concrets (ce ne sont que des badges visuels).
 - **Portails dédiés Banque de sang / Clinique privée / Admin** — le rôle
   "Établissement" est généralisé (champ `type`) et couvert par les mêmes
   écrans WH-*. Des portails/écrans réellement distincts par type, et un rôle
@@ -53,3 +54,10 @@ le détail des décisions produit).
   pré-téléchargées ou capture statique de Dakar/Thiès) pour ne pas dépendre
   d'une vraie connexion pendant la présentation. Explicitement mis de côté
   pour plus tard, pas pour l'instant.
+
+## CI
+
+- Le workflow `.github/workflows/ci.yml` existe et a été vérifié en rejouant
+  chaque étape localement, mais **aucun dépôt GitHub distant n'est encore
+  configuré** — la CI ne s'activera qu'après un premier `git push` vers
+  GitHub.
