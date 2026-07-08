@@ -43,6 +43,12 @@ le détail des décisions produit).
 
 ## Autres
 
+- **Affichage des stocks de poches (ajouté le 2026-07-08)** : les stocks
+  simulés (`Etablissement.stockPoches`) ne sont visibles qu'à travers le
+  balayage WH-04. Un tableau de stocks sur WC-01 (supervision CNTS) et/ou
+  WA-01 (vue nationale) serait la suite naturelle — hors périmètre pour
+  l'instant.
+
 - QR code : reste purement visuel (`qrcode.react`), aucune vraie lecture
   caméra côté hôpital (décision volontaire du brief).
 - **Carte de guidage (MD-11) — changement de décision demandé le 2026-07-08** :

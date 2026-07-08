@@ -113,6 +113,43 @@ d'urgence), vérifié avec des distances réalistes Dakar/Thiès.
 Le cas H (voir `TODO.md`) reste bloqué : la doc produit ne définit jamais
 la règle médicale nécessaire pour l'implémenter correctement.
 
+## Vrai scan des infrastructures (2026-07-08)
+
+La phase `SCANNING_INFRAS` n'est plus un simple minuteur : le Decision
+Engine balaie réellement les établissements proches avant de mobiliser des
+donneurs, conformément au Core Loop du brief (« cherche une poche
+compatible → si indisponible ou trop lent → CNTS mobilise un donneur »).
+
+- Chaque établissement a un **stock simulé de poches par groupe sanguin**
+  (`Etablissement.stockPoches`, seed dans `packages/mock-data`). Les groupes
+  rares (O-, A-, B-, AB-) sont à zéro partout : c'est la pénurie qui force
+  la bascule donneurs, cœur de la démo.
+- Le moteur vérifie les établissements **du plus proche au plus lointain**,
+  une vérification à la fois, étalées sur la fenêtre WC-03
+  (`dureeRechercheMsParNiveau`). Poche trouvée → stock décrémenté, source
+  enregistrée (`sourcePocheEtablissementId`), demande `CLOSED`. Aucun stock
+  nulle part → `notifierProchainDonneur`, **quel que soit le niveau, y
+  compris STANDARD**.
+- **Niveau Critique** : la recherche donneurs démarre pendant le scan
+  (vraie recherche simultanée infra + donneurs). Si une poche est trouvée
+  alors que des candidats sont notifiés/pré-réservés, la poche gagne et les
+  candidats sont éjectés (même mécanique que le Scénario E). Une fois un
+  donneur confirmé `EN_ROUTE`, le scan devient sans effet — on n'entre
+  jamais dans le cas H bloqué (règle médicale non définie).
+- **WH-04** affiche le balayage en direct (nom, distance, verdict par
+  établissement) dans la timeline séquentielle comme dans la vue parallèle
+  Critique, plus une carte « Poche fournie par … » quand l'issue est une
+  poche. La piste courte « infra » n'est plus choisie par le niveau
+  d'urgence mais par l'issue réelle de la demande.
+- Le résultat n'est donc plus pré-déterminé par le niveau d'urgence : c'est
+  le **stock** qui décide, le niveau ne pilote que le délai, les vagues de
+  rayon et le séquentiel/parallèle. Scénario C inchangé en surface (AB+
+  STANDARD trouve sa poche au CNTS), mais désormais par un vrai chemin.
+- Suite d'intégration étendue : 43 → **55 assertions** (poche du plus
+  proche en stock, décrément du stock, PRIORITAIRE résolu via infra,
+  STANDARD qui bascule donneurs, recherche parallèle Critique). Reset des
+  stocks gratuit à chaque `/demo/restart` (`structuredClone` du seed).
+
 ## Mode Autonome
 
 Le serveur peut désormais tourner **sans aucune intervention humaine**

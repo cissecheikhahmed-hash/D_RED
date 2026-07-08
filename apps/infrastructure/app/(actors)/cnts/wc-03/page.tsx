@@ -30,9 +30,14 @@ export default function PolitiquesPage() {
       <h1 className="text-2xl font-semibold">Decision Policies</h1>
       <Card>
         <CardHeader>
-          <CardTitle>Délai de recherche infrastructure avant notification des donneurs</CardTitle>
+          <CardTitle>Fenêtre de scan des infrastructures</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Durée totale du balayage des stocks des établissements proches avant la bascule vers
+            la mobilisation de donneurs. Le Niveau Critique lance les deux recherches en
+            simultané.
+          </p>
           {NIVEAUX.map((niveau) => (
             <div key={niveau} className="flex items-center justify-between gap-4">
               <Label className="flex-1">{NIVEAU_URGENCE_LABELS[niveau]}</Label>

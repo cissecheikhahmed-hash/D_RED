@@ -188,6 +188,101 @@ async function testScenarioC() {
     state.missions.filter((m) => m.demandeId === demande.id).length === 0,
     "aucune mission jamais créée pour cette demande",
   );
+  assert(
+    d1?.sourcePocheEtablissementId === "etab_cnts_dakar",
+    "la poche vient bien de l'établissement le plus proche qui en a en stock (CNTS Dakar)",
+  );
+  assert(
+    d1?.scanInfras?.some(
+      (s) => s.etablissementId === "etab_cnts_dakar" && s.statut === "POCHE_TROUVEE",
+    ),
+    "le scan des infrastructures trace bien la poche trouvée",
+  );
+  const cnts = state.etablissements.find((e) => e.id === "etab_cnts_dakar");
+  assert(cnts?.stockPoches["AB+"] === 1, "le stock AB+ du CNTS est décrémenté (2 -> 1)");
+}
+
+// --- Scan infra : c'est le stock qui décide, pas le niveau d'urgence ---
+async function testStockAvantUrgence() {
+  console.log("\n=== Scan infra : PRIORITAIRE résolu par une poche en stock ===");
+  await restart();
+
+  const { data: demande } = await post("/demandes", {
+    etablissementId: "etab_hopital_thies",
+    groupeSanguin: "A+",
+    produit: "SANG_TOTAL",
+    niveauUrgence: "PRIORITAIRE",
+  });
+
+  const { demande: d1, state } = await attendreStatutDemande(demande.id, ["CLOSED"]);
+  assert(d1?.status === "CLOSED", "un niveau PRIORITAIRE se résout aussi par une poche en stock");
+  assert(Boolean(d1?.sourcePocheEtablissementId), "l'établissement source de la poche est enregistré");
+  assert(
+    state.missions.filter((m) => m.demandeId === demande.id).length === 0,
+    "aucun donneur mobilisé quand une infrastructure a la poche",
+  );
+  const source = state.etablissements.find((e) => e.id === d1?.sourcePocheEtablissementId);
+  assert(
+    source && source.stockPoches["A+"] >= 0 && source.stockPoches["A+"] < 4,
+    "le stock A+ de l'établissement source est décrémenté",
+  );
+}
+
+// --- Scan infra : STANDARD sans stock bascule vers les donneurs ---
+async function testBasculeDonneursStandard() {
+  console.log("\n=== Scan infra : STANDARD sans stock bascule vers les donneurs ===");
+  await restart();
+
+  const { data: demande } = await post("/demandes", {
+    etablissementId: "etab_hopital_principal_dakar",
+    groupeSanguin: "O-",
+    produit: "SANG_TOTAL",
+    niveauUrgence: "STANDARD",
+  });
+
+  const { demande: d1 } = await attendreStatutDemande(demande.id, ["DONORS_NOTIFIED"], 8000);
+  assert(
+    d1?.status === "DONORS_NOTIFIED",
+    "aucune poche O- en stock : la demande bascule vers la recherche de donneurs",
+  );
+  assert(
+    d1?.scanInfras?.length === 3 && d1.scanInfras.every((s) => s.statut === "INDISPONIBLE"),
+    "les 3 autres établissements ont tous été balayés sans poche",
+  );
+  const mission = await attendreNouvelleMissionNotifiee(demande.id);
+  assert(Boolean(mission), "un donneur O- est notifié après l'épuisement des infrastructures");
+}
+
+// --- Scan infra : CRITIQUE cherche infra ET donneurs en même temps ---
+async function testScanParalleleCritique() {
+  console.log("\n=== Scan infra : recherche parallèle du Niveau Critique ===");
+  await restart();
+
+  const { data: demande } = await post("/demandes", {
+    etablissementId: "etab_hopital_principal_dakar",
+    groupeSanguin: "O-",
+    produit: "SANG_TOTAL",
+    niveauUrgence: "CRITIQUE",
+  });
+
+  await sleep(1400);
+  const { data: pendant } = await get("/state");
+  const dPendant = pendant.demandes.find((d) => d.id === demande.id);
+  const notifiees = pendant.missions.filter(
+    (m) => m.demandeId === demande.id && m.status === "NOTIFIED",
+  );
+  assert(
+    notifiees.length > 0 && dPendant?.scanInfras?.some((s) => s.statut === "EN_COURS"),
+    "des donneurs sont notifiés pendant que le scan des infrastructures tourne encore",
+  );
+
+  await sleep(1500);
+  const { data: apres } = await get("/state");
+  const dApres = apres.demandes.find((d) => d.id === demande.id);
+  assert(
+    dApres?.scanInfras?.every((s) => s.statut === "INDISPONIBLE"),
+    "le scan se termine sans poche (aucun stock O-) et la voie donneurs reste active",
+  );
 }
 
 // --- Scénario D : le donneur se désiste en route -> re-recherche immédiate ---
@@ -432,6 +527,9 @@ async function main() {
     testScenarioA,
     testScenarioB,
     testScenarioC,
+    testStockAvantUrgence,
+    testBasculeDonneursStandard,
+    testScanParalleleCritique,
     testScenarioD,
     testScenarioE,
     testScenarioF,

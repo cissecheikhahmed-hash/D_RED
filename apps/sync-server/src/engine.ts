@@ -1,4 +1,13 @@
-import type { Demande, DemandeStatus, Donneur, Mission, MissionStatus, NiveauUrgence } from "@d-red/types";
+import type {
+  Demande,
+  DemandeStatus,
+  Donneur,
+  Etablissement,
+  Mission,
+  MissionStatus,
+  NiveauUrgence,
+  ScanInfraEtape,
+} from "@d-red/types";
 import { distanceKm, generateId, RADIUS_WAVES_KM } from "@d-red/utils";
 import { store } from "./store.js";
 import { demoClock } from "./demoClock.js";
@@ -20,24 +29,123 @@ export function changerStatutDemande(demande: Demande, status: DemandeStatus): v
   demande.status = status;
 }
 
+/**
+ * Niveau Critique : la recherche donneurs démarre pendant le scan des
+ * infrastructures (recherche simultanée, Phase 2) au lieu d'attendre son
+ * épuisement. Légèrement différée pour rester une étape distincte du
+ * pas-à-pas du Mode Démo.
+ */
+const DELAI_RECHERCHE_PARALLELE_MS = 600;
+
 export function demarrerDemande(demande: Demande): void {
   broadcastState();
   demoClock.schedule(() => {
     changerStatutDemande(demande, "SCANNING_INFRAS");
     broadcastState();
+    lancerScanInfrastructures(demande.id);
+    if (demande.niveauUrgence === "CRITIQUE") {
+      demoClock.schedule(() => notifierProchainDonneur(demande.id), DELAI_RECHERCHE_PARALLELE_MS);
+    }
+  }, 500);
+}
+
+/**
+ * Statuts pendant lesquels le scan des infrastructures reste pertinent :
+ * une poche trouvée peut encore résoudre la demande, même si des donneurs
+ * sont déjà notifiés ou pré-réservés (recherche parallèle du Niveau
+ * Critique — les candidats sont alors éjectés). Dès qu'un donneur est
+ * confirmé EN_ROUTE, le scan devient sans effet : la règle médicale d'une
+ * poche découverte pendant le trajet n'est pas définie par le produit
+ * (cas H, voir TODO.md), donc on ne l'invente pas.
+ */
+const STATUTS_SCAN_PERTINENT = new Set<DemandeStatus>([
+  "SCANNING_INFRAS",
+  "DONORS_NOTIFIED",
+  "PRE_RESERVED",
+]);
+
+/**
+ * Balaie les autres établissements du plus proche au plus lointain, une
+ * vérification de stock à la fois, étalées sur la fenêtre de recherche
+ * WC-03. Poche compatible trouvée → la demande est résolue sur place ;
+ * aucun stock nulle part → bascule vers la mobilisation donneur, quel que
+ * soit le niveau d'urgence.
+ */
+export function lancerScanInfrastructures(demandeId: string): void {
+  const demande = store.getDemande(demandeId);
+  if (!demande) return;
+  const demandeur = store.etablissements.find((e) => e.id === demande.etablissementId);
+  if (!demandeur) return;
+
+  const candidats = store.etablissements
+    .filter((e) => e.id !== demande.etablissementId)
+    .map((e) => {
+      const etape: ScanInfraEtape = {
+        etablissementId: e.id,
+        distanceKm: distanceKm(e.position, demandeur.position),
+        statut: "EN_COURS",
+      };
+      return { etablissement: e, etape };
+    })
+    .sort((a, b) => a.etape.distanceKm - b.etape.distanceKm);
+
+  demande.scanInfras = candidats.map((c) => c.etape);
+  broadcastState();
+
+  if (candidats.length === 0) {
+    notifierProchainDonneur(demande.id);
+    return;
+  }
+
+  const delaiParEtablissement = Math.round(
+    policies.dureeRechercheMsParNiveau[demande.niveauUrgence] / candidats.length,
+  );
+
+  const verifier = (index: number): void => {
     demoClock.schedule(() => {
-      // Niveau Standard : recherche infrastructure uniquement (Phase 2) —
-      // une poche compatible est toujours trouvée, aucun donneur n'est
-      // jamais mobilisé. C'est le second "happy path" (Scénario C),
-      // distinct de la mobilisation donneur des niveaux Prioritaire/Critique.
-      if (demande.niveauUrgence === "STANDARD") {
-        changerStatutDemande(demande, "CLOSED");
-        broadcastState();
+      const d = store.getDemande(demandeId);
+      if (!d || !STATUTS_SCAN_PERTINENT.has(d.status)) return;
+
+      const { etablissement, etape } = candidats[index]!;
+      if ((etablissement.stockPoches[d.groupeSanguin] ?? 0) > 0) {
+        resoudreParInfrastructure(d, etablissement, etape);
         return;
       }
-      notifierProchainDonneur(demande.id);
-    }, policies.dureeRechercheMsParNiveau[demande.niveauUrgence]);
-  }, 500);
+
+      etape.statut = "INDISPONIBLE";
+      broadcastState();
+      if (index + 1 < candidats.length) {
+        verifier(index + 1);
+      } else {
+        // Aucune poche dans le rayon : bascule donneurs (no-op pour le
+        // Niveau Critique dont la recherche parallèle tourne déjà).
+        notifierProchainDonneur(demandeId);
+      }
+    }, delaiParEtablissement);
+  };
+  verifier(0);
+}
+
+/**
+ * Une poche compatible résout la demande immédiatement : stock décrémenté,
+ * source enregistrée, et les éventuels candidats donneurs encore en course
+ * (recherche parallèle) sont éjectés — même mécanique que le Scénario E.
+ */
+function resoudreParInfrastructure(
+  demande: Demande,
+  etablissement: Etablissement,
+  etape: ScanInfraEtape,
+): void {
+  etablissement.stockPoches[demande.groupeSanguin] -= 1;
+  etape.statut = "POCHE_TROUVEE";
+  demande.sourcePocheEtablissementId = etablissement.id;
+  for (const mission of store.missionsForDemande(demande.id)) {
+    if (mission.status === "NOTIFIED" || mission.status === "PRE_RESERVED") {
+      mission.status = "EJECTED";
+    }
+  }
+  changerStatutDemande(demande, "CLOSED");
+  broadcastState();
 }
 
 /**

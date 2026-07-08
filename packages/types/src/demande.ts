@@ -37,6 +37,25 @@ export const DEMANDE_STATUS_LABELS: Record<DemandeStatus, string> = {
   CLOSED: "Clôturée",
 };
 
+/**
+ * Résultat de la vérification d'un établissement pendant SCANNING_INFRAS.
+ * Le Decision Engine balaie les établissements du plus proche au plus
+ * lointain ; chaque étape est diffusée en direct pour être rendue sur WH-04.
+ */
+export type ScanInfraStatut = "EN_COURS" | "INDISPONIBLE" | "POCHE_TROUVEE";
+
+export const SCAN_INFRA_STATUT_LABELS: Record<ScanInfraStatut, string> = {
+  EN_COURS: "Vérification…",
+  INDISPONIBLE: "Indisponible",
+  POCHE_TROUVEE: "Poche trouvée",
+};
+
+export interface ScanInfraEtape {
+  etablissementId: string;
+  distanceKm: number;
+  statut: ScanInfraStatut;
+}
+
 export interface Demande {
   id: string;
   etablissementId: string;
@@ -52,4 +71,8 @@ export interface Demande {
    * sync-server — nourrit l'horodatage des étapes de la timeline WH-04.
    */
   historiqueStatuts?: Partial<Record<DemandeStatus, string>>;
+  /** Balayage des établissements proches, du plus proche au plus lointain. */
+  scanInfras?: ScanInfraEtape[];
+  /** Renseigné quand la demande est résolue par une poche d'un établissement. */
+  sourcePocheEtablissementId?: string;
 }

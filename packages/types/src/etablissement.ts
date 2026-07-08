@@ -1,3 +1,5 @@
+import type { GroupeSanguin } from "./donneur.js";
+
 /**
  * Rôle "demandeur" généralisé : le prototype ne construit qu'un seul jeu
  * d'écrans (WH-*) pour toute structure qui émet une demande de sang, plutôt
@@ -19,4 +21,10 @@ export interface Etablissement {
   ville: string;
   /** Position simulée (coordonnées fictives, pas de vraie géolocalisation). */
   position: { lat: number; lng: number };
+  /**
+   * Poches disponibles par groupe sanguin (stock simulé). C'est lui que le
+   * Decision Engine consulte pendant SCANNING_INFRAS ; une poche trouvée le
+   * décrémente.
+   */
+  stockPoches: Record<GroupeSanguin, number>;
 }

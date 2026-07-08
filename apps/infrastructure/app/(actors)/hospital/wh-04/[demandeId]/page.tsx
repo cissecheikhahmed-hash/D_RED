@@ -3,8 +3,14 @@
 import { useParams, useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useDredStore } from "@d-red/sync-client";
-import { DEMANDE_STATUS_LABELS, type DemandeStatus } from "@d-red/types";
-import { formatHeureFr } from "@d-red/utils";
+import {
+  DEMANDE_STATUS_LABELS,
+  SCAN_INFRA_STATUT_LABELS,
+  type DemandeStatus,
+  type Etablissement,
+  type ScanInfraEtape,
+} from "@d-red/types";
+import { formatDistanceKm, formatHeureFr } from "@d-red/utils";
 import { DemandeStatusBadge, DotBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,8 +49,10 @@ export default function TimelinePage() {
   const demandes = useDredStore((s) => s.demandes);
   const donneurs = useDredStore((s) => s.donneurs);
   const missions = useDredStore((s) => s.missions);
+  const etablissements = useDredStore((s) => s.etablissements);
   const demande = demandes.find((d) => d.id === params.demandeId);
   const donneurAssigne = donneurs.find((d) => d.id === demande?.donneurAssigneId);
+  const sourcePoche = etablissements.find((e) => e.id === demande?.sourcePocheEtablissementId);
 
   if (!demande) {
     return (
@@ -54,8 +62,14 @@ export default function TimelinePage() {
     );
   }
 
-  const viaInfraSeule = demande.niveauUrgence === "STANDARD";
+  // La piste courte "infra" n'est choisie qu'une fois la poche réellement
+  // trouvée : tant que le scan tourne, l'issue (poche ou donneur) est ouverte.
+  const viaInfraSeule = Boolean(demande.sourcePocheEtablissementId);
   const etapes = viaInfraSeule ? ETAPES_INFRA : ETAPES_DONNEUR;
+  const scanInfras = demande.scanInfras ?? [];
+  const distanceSourcePoche = scanInfras.find(
+    (s) => s.etablissementId === sourcePoche?.id,
+  )?.distanceKm;
   const indexActuel = etapes.indexOf(demande.status);
 
   const missionsActives = missions.filter(
@@ -97,6 +111,18 @@ export default function TimelinePage() {
         </Card>
       )}
 
+      {sourcePoche && (
+        <Card>
+          <CardContent className="flex items-center justify-between gap-3 pt-6">
+            <span className="text-sm">Poche fournie par</span>
+            <Badge variant="secondary">
+              {sourcePoche.nom}
+              {distanceSourcePoche !== undefined && ` · ${formatDistanceKm(distanceSourcePoche)}`}
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
       {rechercheEpuisee && (
         <Card className="border-waiting">
           <CardContent className="pt-6 text-sm text-muted-foreground">
@@ -107,7 +133,12 @@ export default function TimelinePage() {
       )}
 
       {rechercheParallele ? (
-        <RechercheParallele donneurs={donneurs} missionsActives={missionsActives} />
+        <RechercheParallele
+          donneurs={donneurs}
+          missionsActives={missionsActives}
+          scanInfras={scanInfras}
+          etablissements={etablissements}
+        />
       ) : (
         <Card>
           <CardContent className="pt-6">
@@ -125,6 +156,8 @@ export default function TimelinePage() {
                     : i === indexActuel
                       ? "courante"
                       : "a-venir";
+                const scanVisible =
+                  etape === "SCANNING_INFRAS" && etat === "courante" && scanInfras.length > 0;
                 return (
                   <EtapeTimeline
                     key={etape}
@@ -133,7 +166,11 @@ export default function TimelinePage() {
                     etat={etat}
                     derniere={i === etapes.length - 1}
                     horodatage={demande.historiqueStatuts?.[etape]}
-                  />
+                  >
+                    {scanVisible && (
+                      <ScanInfrastructures scanInfras={scanInfras} etablissements={etablissements} />
+                    )}
+                  </EtapeTimeline>
                 );
               })}
             </ol>
@@ -157,6 +194,7 @@ function EtapeTimeline({
   etat,
   derniere,
   horodatage,
+  children,
 }: {
   label: string;
   numero: number;
@@ -164,6 +202,8 @@ function EtapeTimeline({
   derniere: boolean;
   /** Heure d'entrée dans le statut (ISO), si le serveur l'a enregistrée. */
   horodatage?: string | undefined;
+  /** Détail affiché sous le libellé (ex. balayage des infrastructures en cours). */
+  children?: React.ReactNode;
 }) {
   return (
     <li className="flex gap-3">
@@ -188,28 +228,72 @@ function EtapeTimeline({
           <span className={`w-px flex-1 ${etat === "faite" ? "bg-primary/40" : "bg-border"}`} />
         )}
       </div>
-      <div className={`flex flex-1 items-baseline justify-between gap-3 pt-1 ${derniere ? "" : "pb-6"}`}>
-        <span
-          className={
-            etat === "courante"
-              ? "font-semibold"
-              : etat === "faite"
-                ? "font-medium"
-                : "text-muted-foreground"
-          }
-        >
-          {label}
-          {etat === "courante" && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">en cours…</span>
-          )}
-        </span>
-        {horodatage && etat !== "a-venir" && (
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {formatHeureFr(horodatage)}
+      <div className={`flex min-w-0 flex-1 flex-col gap-2 pt-1 ${derniere ? "" : "pb-6"}`}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span
+            className={
+              etat === "courante"
+                ? "font-semibold"
+                : etat === "faite"
+                  ? "font-medium"
+                  : "text-muted-foreground"
+            }
+          >
+            {label}
+            {etat === "courante" && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">en cours…</span>
+            )}
           </span>
-        )}
+          {horodatage && etat !== "a-venir" && (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {formatHeureFr(horodatage)}
+            </span>
+          )}
+        </div>
+        {children}
       </div>
     </li>
+  );
+}
+
+/**
+ * Balayage des établissements proches pendant SCANNING_INFRAS : un
+ * établissement par ligne, du plus proche au plus lointain, avec son verdict
+ * en direct (vérification, indisponible, poche trouvée).
+ */
+function ScanInfrastructures({
+  scanInfras,
+  etablissements,
+}: {
+  scanInfras: ScanInfraEtape[];
+  etablissements: Etablissement[];
+}) {
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {scanInfras.map((scan) => {
+        const etablissement = etablissements.find((e) => e.id === scan.etablissementId);
+        return (
+          <li key={scan.etablissementId} className="flex items-center justify-between gap-3 text-xs">
+            <span className="min-w-0 truncate">
+              {etablissement?.nom ?? "Établissement"}
+              <span className="ml-1.5 text-muted-foreground">
+                {formatDistanceKm(scan.distanceKm)}
+              </span>
+            </span>
+            {scan.statut === "EN_COURS" ? (
+              <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" />
+                {SCAN_INFRA_STATUT_LABELS.EN_COURS}
+              </span>
+            ) : (
+              <DotBadge tone={scan.statut === "POCHE_TROUVEE" ? "success" : "neutral"}>
+                {SCAN_INFRA_STATUT_LABELS[scan.statut]}
+              </DotBadge>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -222,17 +306,29 @@ function EtapeTimeline({
 function RechercheParallele({
   donneurs,
   missionsActives,
+  scanInfras,
+  etablissements,
 }: {
   donneurs: ReturnType<typeof useDredStore.getState>["donneurs"];
   missionsActives: ReturnType<typeof useDredStore.getState>["missions"];
+  scanInfras: ScanInfraEtape[];
+  etablissements: Etablissement[];
 }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <Card>
-        <CardContent className="flex flex-col items-center gap-2 pt-6 text-center">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <p className="text-sm font-medium">Recherche infrastructure</p>
-          <p className="text-xs text-muted-foreground">Poches compatibles à proximité</p>
+        <CardContent className="flex flex-col gap-2 pt-6">
+          <div className="flex items-center justify-center gap-2 text-center">
+            <Loader2 className="size-6 animate-spin text-primary" />
+          </div>
+          <p className="text-center text-sm font-medium">Recherche infrastructure</p>
+          {scanInfras.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground">
+              Poches compatibles à proximité…
+            </p>
+          ) : (
+            <ScanInfrastructures scanInfras={scanInfras} etablissements={etablissements} />
+          )}
         </CardContent>
       </Card>
       <Card>

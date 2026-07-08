@@ -33,3 +33,8 @@ export function formatHeureFr(iso: string): string {
 export function formatEtaMinutes(minutes: number): string {
   return `${minutes} min`;
 }
+
+/** Distance courte en français ("2,1 km") — affichage du scan des infrastructures. */
+export function formatDistanceKm(km: number): string {
+  return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(km)} km`;
+}

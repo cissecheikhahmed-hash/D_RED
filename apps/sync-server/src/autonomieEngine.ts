@@ -10,6 +10,7 @@ import {
   confirmerMission,
   demarrerDemande,
   envoyerBilan,
+  lancerScanInfrastructures,
   marquerArrivee,
   marquerDonEffectue,
   notifierProchainDonneur,
@@ -65,12 +66,8 @@ function tick(): void {
   for (const demande of store.demandes) {
     if (demande.status === "CREATED") {
       changerStatutDemande(demande, "SCANNING_INFRAS");
-    } else if (demande.status === "SCANNING_INFRAS") {
-      if (demande.niveauUrgence === "STANDARD") {
-        changerStatutDemande(demande, "CLOSED");
-      } else {
-        notifierProchainDonneur(demande.id);
-      }
+    } else if (demande.status === "SCANNING_INFRAS" && !demande.scanInfras) {
+      lancerScanInfrastructures(demande.id);
     }
   }
 
