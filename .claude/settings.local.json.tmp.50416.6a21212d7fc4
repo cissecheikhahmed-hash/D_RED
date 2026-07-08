@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx pnpm *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Badges sémantiques partagés \\(urgence/statut\\) codés couleur sur la palette D.RED *)",
+      "Bash(git commit -q -m 'App shell Infrastructure : topbar de marque, identité d'\\\\''acteur, onglets, témoin temps réel *)",
+      "Skill(dataviz)",
+      "Bash(git commit -q -m 'Écrans jury : KPI cards, timeline verticale animée, alerte mission renforcée *)"
+    ]
+  }
+}

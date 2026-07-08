@@ -3,10 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
-import { formatDateFr } from "@d-red/utils";
+import { formatRelativeTime } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { StatCard } from "@d-red/ui/components/stat-card";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
-import { Inbox, Plus } from "lucide-react";
+import { useNow } from "@d-red/ui/hooks/use-now";
+import { Activity, CheckCircle2, Inbox, Plus, Siren } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEtablissementSession } from "@/lib/etablissementSession";
@@ -27,6 +29,11 @@ export default function DashboardPage() {
     .filter((d) => d.etablissementId === etablissementId)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
+  const actives = mesDemandes.filter((d) => d.status !== "CLOSED");
+  const critiquesActives = actives.filter((d) => d.niveauUrgence === "CRITIQUE").length;
+  const cloturees = mesDemandes.length - actives.length;
+  const maintenant = useNow();
+
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
       <div className="flex items-center justify-between gap-3">
@@ -38,6 +45,17 @@ export default function DashboardPage() {
           <Plus className="size-4" />
           Nouvelle urgence
         </Button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard label="Demandes actives" value={actives.length} icon={Activity} />
+        <StatCard
+          label="Critiques en cours"
+          value={critiquesActives}
+          icon={Siren}
+          tone={critiquesActives > 0 ? "critical" : "neutral"}
+        />
+        <StatCard label="Clôturées" value={cloturees} icon={CheckCircle2} tone="success" />
       </div>
 
       <div className="flex flex-col gap-3">
@@ -56,7 +74,9 @@ export default function DashboardPage() {
                   <p className="font-display text-xl text-primary">{demande.groupeSanguin}</p>
                   <UrgencyBadge niveau={demande.niveauUrgence} />
                 </div>
-                <p className="text-xs text-muted-foreground">{formatDateFr(demande.createdAt)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatRelativeTime(demande.createdAt, maintenant)}
+                </p>
               </div>
               <DemandeStatusBadge status={demande.status} />
             </CardContent>

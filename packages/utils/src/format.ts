@@ -8,14 +8,18 @@ export function formatDateFr(iso: string): string {
   }).format(new Date(iso));
 }
 
-/** Libellé relatif simple ("à l'instant", "il y a 3 min") pour les timelines temps réel. */
+/**
+ * Libellé relatif simple ("à l'instant", "il y a 3 min") pour les timelines
+ * temps réel. Au-delà de 24 h, la date absolue redevient plus parlante.
+ */
 export function formatRelativeTime(iso: string, now: Date = new Date()): string {
   const diffMs = now.getTime() - new Date(iso).getTime();
   const diffMin = Math.round(diffMs / 60000);
   if (diffMin <= 0) return "à l'instant";
   if (diffMin < 60) return `il y a ${diffMin} min`;
   const diffH = Math.round(diffMin / 60);
-  return `il y a ${diffH} h`;
+  if (diffH < 24) return `il y a ${diffH} h`;
+  return formatDateFr(iso);
 }
 
 export function formatEtaMinutes(minutes: number): string {

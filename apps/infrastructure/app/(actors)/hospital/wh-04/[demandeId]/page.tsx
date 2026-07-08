@@ -106,28 +106,37 @@ export default function TimelinePage() {
       )}
 
       {rechercheParallele ? (
-        <RecherchePorallele donneurs={donneurs} missionsActives={missionsActives} />
+        <RechercheParallele donneurs={donneurs} missionsActives={missionsActives} />
       ) : (
-        <ol className="flex flex-col gap-3">
-          {etapes.map((etape, i) => {
-            const atteinte = i <= indexActuel;
-            const derniereEtapeInfra = viaInfraSeule && etape === "CLOSED";
-            return (
-              <li key={etape} className="flex items-center gap-3">
-                <span
-                  className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
-                    atteinte ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {atteinte ? <Check className="size-3.5" /> : i + 1}
-                </span>
-                <span className={atteinte ? "font-medium" : "text-muted-foreground"}>
-                  {derniereEtapeInfra ? LABEL_ETAPE_INFRA_FINALE : DEMANDE_STATUS_LABELS[etape]}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+        <Card>
+          <CardContent className="pt-6">
+            <ol className="flex flex-col">
+              {etapes.map((etape, i) => {
+                const derniereEtapeInfra = viaInfraSeule && etape === "CLOSED";
+                const label = derniereEtapeInfra
+                  ? LABEL_ETAPE_INFRA_FINALE
+                  : DEMANDE_STATUS_LABELS[etape];
+                // La dernière étape atteinte est un état terminal : on la rend
+                // "faite" (coche) plutôt qu'éternellement pulsée.
+                const etat: EtatEtape =
+                  i < indexActuel || (i === indexActuel && i === etapes.length - 1)
+                    ? "faite"
+                    : i === indexActuel
+                      ? "courante"
+                      : "a-venir";
+                return (
+                  <EtapeTimeline
+                    key={etape}
+                    label={label}
+                    numero={i + 1}
+                    etat={etat}
+                    derniere={i === etapes.length - 1}
+                  />
+                );
+              })}
+            </ol>
+          </CardContent>
+        </Card>
       )}
 
       {(demande.status === "EN_ROUTE" || demande.status === "ARRIVED") && (
@@ -137,13 +146,70 @@ export default function TimelinePage() {
   );
 }
 
+type EtatEtape = "faite" | "courante" | "a-venir";
+
+/** Étape de la timeline verticale : coche rouge (faite), nœud pulsé (courante), estompée (à venir). */
+function EtapeTimeline({
+  label,
+  numero,
+  etat,
+  derniere,
+}: {
+  label: string;
+  numero: number;
+  etat: EtatEtape;
+  derniere: boolean;
+}) {
+  return (
+    <li className="flex gap-3">
+      <div className="flex flex-col items-center">
+        {etat === "faite" ? (
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Check className="size-3.5" />
+          </span>
+        ) : etat === "courante" ? (
+          <span className="relative flex size-6 shrink-0 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-primary/25 [animation-duration:1.8s]" />
+            <span className="relative flex size-6 items-center justify-center rounded-full border-2 border-primary bg-white">
+              <span className="size-2 rounded-full bg-primary" />
+            </span>
+          </span>
+        ) : (
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-white text-xs text-muted-foreground">
+            {numero}
+          </span>
+        )}
+        {!derniere && (
+          <span className={`w-px flex-1 ${etat === "faite" ? "bg-primary/40" : "bg-border"}`} />
+        )}
+      </div>
+      <div className={`pt-1 ${derniere ? "" : "pb-6"}`}>
+        <span
+          className={
+            etat === "courante"
+              ? "font-semibold"
+              : etat === "faite"
+                ? "font-medium"
+                : "text-muted-foreground"
+          }
+        >
+          {label}
+        </span>
+        {etat === "courante" && (
+          <span className="ml-2 text-xs text-muted-foreground">en cours…</span>
+        )}
+      </div>
+    </li>
+  );
+}
+
 /**
  * Niveau Critique — recherche infrastructure ET donneurs en parallèle
  * (Phase 2), rendue comme deux voies actives simultanément plutôt qu'une
  * timeline séquentielle. Chaque candidat donneur est affiché avec son nom
  * masqué (privacy côté hôpital) et son état (en attente / a accepté).
  */
-function RecherchePorallele({
+function RechercheParallele({
   donneurs,
   missionsActives,
 }: {

@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDredStore, dredApi } from "@d-red/sync-client";
 import { distanceKm, simulateEtaMinutes } from "@d-red/utils";
 import { NIVEAU_URGENCE_LABELS, PRODUIT_SANGUIN_LABELS } from "@d-red/types";
-import { Badge } from "@/components/ui/badge";
+import { Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -45,21 +45,34 @@ export default function MissionPage() {
 
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-between gap-6 bg-primary p-6 text-primary-foreground">
-      <div className="flex flex-col items-center gap-3 pt-8 text-center">
-        <Badge variant="secondary">{NIVEAU_URGENCE_LABELS[demande.niveauUrgence]}</Badge>
-        <span className="animate-in zoom-in-50 duration-500 font-display text-8xl">
-          {demande.groupeSanguin}
+      <div className="flex flex-col items-center gap-3 pt-6 text-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-widest">
+          <span className="size-1.5 animate-pulse rounded-full bg-white" />
+          Urgence {NIVEAU_URGENCE_LABELS[demande.niveauUrgence]}
         </span>
+        <div className="relative flex items-center justify-center py-8">
+          <span className="absolute size-44 animate-ping rounded-full bg-white/10 [animation-duration:2s]" />
+          <span className="absolute size-32 rounded-full bg-white/10" />
+          <span className="animate-in zoom-in-50 duration-500 relative font-display text-8xl">
+            {demande.groupeSanguin}
+          </span>
+        </div>
         <p className="text-lg">{PRODUIT_SANGUIN_LABELS[demande.produit]}</p>
+        <p className="text-sm text-white/70">Un patient a besoin de vous maintenant.</p>
       </div>
 
       <Card className="bg-white text-foreground">
-        <CardContent className="flex flex-col gap-2 pt-6">
+        <CardContent className="flex flex-col gap-1 pt-6">
           <p className="font-medium">{etablissement.nom}</p>
           <p className="text-sm text-muted-foreground">{etablissement.ville}</p>
-          <div className="mt-2 flex justify-between text-sm">
-            <span>{distance.toFixed(1)} km</span>
-            <span>≈ {eta} min</span>
+          <div className="mt-3 flex gap-2 text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
+              <MapPin className="size-3.5 text-primary" />
+              {distance.toFixed(1)} km
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
+              <Clock className="size-3.5 text-primary" />≈ {eta} min
+            </span>
           </div>
         </CardContent>
       </Card>

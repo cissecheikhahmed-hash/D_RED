@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useDredStore } from "@d-red/sync-client";
-import { formatDateFr } from "@d-red/utils";
+import { formatRelativeTime } from "@d-red/utils";
 import { EmptyState } from "@d-red/ui/components/empty-state";
+import { StatCard } from "@d-red/ui/components/stat-card";
 import { DemandeStatusBadge, UrgencyBadge } from "@d-red/ui/components/status-badges";
-import { ShieldCheck } from "lucide-react";
+import { useNow } from "@d-red/ui/hooks/use-now";
+import { Activity, HeartHandshake, ShieldCheck, Siren, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +18,7 @@ export default function SupervisionPage() {
   const demandes = useDredStore((s) => s.demandes);
   const etablissements = useDredStore((s) => s.etablissements);
   const missions = useDredStore((s) => s.missions);
+  const donneurs = useDredStore((s) => s.donneurs);
   const [dialogDemandeId, setDialogDemandeId] = useState<string | null>(null);
 
   const demandesTriees = [...demandes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
@@ -23,9 +26,38 @@ export default function SupervisionPage() {
     (m) => m.demandeId === dialogDemandeId && (m.status === "NOTIFIED" || m.status === "PRE_RESERVED"),
   );
 
+  const demandesActives = demandes.filter((d) => d.status !== "CLOSED");
+  const critiquesActives = demandesActives.filter((d) => d.niveauUrgence === "CRITIQUE").length;
+  const donneursMobilises = missions.filter(
+    (m) =>
+      m.status === "NOTIFIED" ||
+      m.status === "PRE_RESERVED" ||
+      m.status === "EN_ROUTE" ||
+      m.status === "ARRIVED",
+  ).length;
+  const donneursDisponibles = donneurs.filter((d) => d.disponible).length;
+  const maintenant = useNow();
+
   return (
     <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
       <h1 className="text-2xl font-semibold">Supervision nationale</h1>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Demandes actives" value={demandesActives.length} icon={Activity} />
+        <StatCard
+          label="Critiques en cours"
+          value={critiquesActives}
+          icon={Siren}
+          tone={critiquesActives > 0 ? "critical" : "neutral"}
+        />
+        <StatCard
+          label="Donneurs mobilisés"
+          value={donneursMobilises}
+          icon={HeartHandshake}
+          tone={donneursMobilises > 0 ? "waiting" : "neutral"}
+        />
+        <StatCard label="Donneurs disponibles" value={donneursDisponibles} icon={Users} />
+      </div>
 
       <div className="flex flex-col gap-3">
         {demandesTriees.length === 0 && (
@@ -46,7 +78,9 @@ export default function SupervisionPage() {
                     <UrgencyBadge niveau={demande.niveauUrgence} />
                   </div>
                   <p className="text-sm">{etablissement?.nom}</p>
-                  <p className="text-xs text-muted-foreground">{formatDateFr(demande.createdAt)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatRelativeTime(demande.createdAt, maintenant)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   {candidats.length > 1 && <Badge variant="outline">{candidats.length} candidats</Badge>}

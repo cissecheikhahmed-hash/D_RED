@@ -2,6 +2,8 @@
 
 import { useDredStore } from "@d-red/sync-client";
 import { TYPE_ETABLISSEMENT_LABELS } from "@d-red/types";
+import { StatCard } from "@d-red/ui/components/stat-card";
+import { Activity, Archive, Building2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -38,33 +40,16 @@ export default function VueEnsembleAdminPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-3xl font-display text-primary">{etablissements.length}</p>
-            <p className="text-sm text-muted-foreground">Établissements</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-3xl font-display text-primary">{donneurs.length}</p>
-            <p className="text-sm text-muted-foreground">
-              Donneurs ({donneursVerifies} vérifiés)
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-3xl font-display text-primary">{demandesActives}</p>
-            <p className="text-sm text-muted-foreground">Demandes actives</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-3xl font-display text-primary">{demandes.length}</p>
-            <p className="text-sm text-muted-foreground">Demandes au total</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Établissements" value={etablissements.length} icon={Building2} />
+        <StatCard
+          label="Donneurs"
+          value={donneurs.length}
+          icon={Users}
+          hint={`dont ${donneursVerifies} vérifiés`}
+        />
+        <StatCard label="Demandes actives" value={demandesActives} icon={Activity} />
+        <StatCard label="Demandes au total" value={demandes.length} icon={Archive} />
       </div>
 
       <Card>
