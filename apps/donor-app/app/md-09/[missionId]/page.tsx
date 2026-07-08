@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDredStore, dredApi } from "@d-red/sync-client";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Screen } from "@/components/screen";
 
 /** MD-09 — Attente de la régulation CNTS après acceptation. */
 export default function AttenteRegulationPage() {
@@ -12,6 +14,7 @@ export default function AttenteRegulationPage() {
   const router = useRouter();
   const missions = useDredStore((s) => s.missions);
   const mission = missions.find((m) => m.id === params.missionId);
+  const [desistementEnCours, setDesistementEnCours] = useState(false);
 
   useEffect(() => {
     if (!mission) return;
@@ -20,14 +23,19 @@ export default function AttenteRegulationPage() {
   }, [mission, router]);
 
   async function seDesister() {
-    await dredApi.annulerMission(params.missionId);
-    router.push("/md-06");
+    setDesistementEnCours(true);
+    try {
+      await dredApi.annulerMission(params.missionId);
+      router.push("/md-06");
+    } finally {
+      setDesistementEnCours(false);
+    }
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
+    <Screen className="items-center justify-center gap-6 text-center">
       <Card>
-        <CardContent className="flex flex-col items-center gap-3 pt-6">
+        <CardContent className="flex flex-col items-center gap-3">
           <div className="relative flex size-12 items-center justify-center">
             <span className="absolute inset-0 animate-ping rounded-full bg-primary/20 [animation-duration:1.8s]" />
             <span className="size-3 rounded-full bg-primary" />
@@ -38,9 +46,10 @@ export default function AttenteRegulationPage() {
           </p>
         </CardContent>
       </Card>
-      <Button variant="ghost" onClick={seDesister}>
+      <Button variant="ghost" disabled={desistementEnCours} onClick={seDesister}>
+        {desistementEnCours && <Loader2 className="size-4 animate-spin" />}
         Me désister
       </Button>
-    </main>
+    </Screen>
   );
 }

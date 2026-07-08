@@ -11,6 +11,7 @@ import { History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
 /** MD-14 — Historique des missions du donneur. */
@@ -29,13 +30,15 @@ export default function HistoriquePage() {
     .sort((a, b) => (a.notifiedAt < b.notifiedAt ? 1 : -1));
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Historique</h1>
-        <Button variant="ghost" size="sm" onClick={() => router.push("/md-06")}>
-          Retour
-        </Button>
-      </div>
+    <Screen className="gap-6">
+      <ScreenHeader
+        title="Historique"
+        action={
+          <Button variant="ghost" size="sm" onClick={() => router.push("/md-06")}>
+            Retour
+          </Button>
+        }
+      />
 
       {donneur && <Badge variant="secondary">{donneur.nombreDonsEffectues} dons effectués</Badge>}
 
@@ -49,7 +52,7 @@ export default function HistoriquePage() {
           const etablissement = etablissements.find((e) => e.id === demande?.etablissementId);
           return (
             <Card key={mission.id}>
-              <CardContent className="flex flex-col gap-1 pt-6">
+              <CardContent className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">{etablissement?.nom ?? "Établissement"}</p>
                   <MissionStatusBadge status={mission.status} />
@@ -65,6 +68,6 @@ export default function HistoriquePage() {
           );
         })}
       </div>
-    </main>
+    </Screen>
   );
 }

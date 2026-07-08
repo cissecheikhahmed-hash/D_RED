@@ -225,3 +225,16 @@ Refonte visuelle sans toucher à la Core Loop ni au Decision Engine :
   MD-12 — elle enfermait le donneur dans la boucle MD-06 → MD-12 → MD-13
   jusqu'à la clôture CNTS ; le dashboard affiche à la place une carte
   « don en cours » avec lien volontaire.
+- **Polish app Donneur (MD-01 → MD-14)** : coquille d'écran commune
+  `Screen`/`ScreenHeader` (`components/screen.tsx`) à la place de la chaîne
+  de classes copiée sur chaque page ; CTA principaux en `size="lg"` ;
+  spinners sur les actions réseau (refus, désistement, questionnaire) ;
+  vraies cases `Checkbox` shadcn sur MD-08 (au lieu des `<input>` natifs)
+  avec libellés encadrés ; `GroupeSanguinTag`, `EmptyState`, `ProgressBar`
+  et `DotBadge` du package UI réutilisés côté donneur ; distances/ETA
+  formatés via `formatDistanceKm`/`formatEtaMinutes` ; OTP MD-04 à 4
+  chiffres centrés (saisie numérique filtrée) ; MD-05 exige un nom avant de
+  continuer ; illustrations SVG passées des hex codés en dur aux variables
+  CSS de la palette ; thumb du Switch en blanc explicite (le
+  `bg-background` crème le rendait invisible sur fond clair). Type-check,
+  ESLint, build Next et 55/55 tests scénarios au vert.

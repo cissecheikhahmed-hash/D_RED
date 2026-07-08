@@ -6,6 +6,7 @@ import { useDredStore } from "@d-red/sync-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Screen } from "@/components/screen";
 import { TELEPHONE_TEMP_KEY, useDonneurSession } from "@/lib/donneurSession";
 
 function lireTelephoneTemp(): string {
@@ -29,7 +30,7 @@ export default function OtpPage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-6">
+    <Screen className="justify-center gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Code de vérification</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -41,15 +42,17 @@ export default function OtpPage() {
         <Input
           id="otp"
           inputMode="numeric"
-          maxLength={6}
-          placeholder="1234"
+          autoComplete="one-time-code"
+          maxLength={4}
+          placeholder="0000"
+          className="text-center text-lg tracking-[0.5em]"
           value={code}
-          onChange={(e) => setCode(e.target.value)}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
         />
       </div>
-      <Button onClick={valider} disabled={code.trim().length < 4}>
-        Valider
+      <Button size="lg" onClick={valider} disabled={code.trim().length < 4}>
+        Continuer
       </Button>
-    </main>
+    </Screen>
   );
 }

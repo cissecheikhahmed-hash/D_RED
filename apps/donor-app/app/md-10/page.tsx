@@ -3,10 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { PALIERS, prochainPalier, trouverPalier } from "@d-red/utils";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { ProgressBar } from "@d-red/ui/components/progress-bar";
 import { Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
 /** MD-10 — Récompenses : palier de fidélité calculé à partir du compteur de dons existant. */
@@ -17,22 +20,25 @@ export default function RecompensesPage() {
   const donneur = donneurs.find((d) => d.id === session.donneurId);
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Récompenses</h1>
-        <Button variant="ghost" size="sm" onClick={() => router.push("/md-06")}>
-          Retour
-        </Button>
-      </div>
+    <Screen className="gap-6">
+      <ScreenHeader
+        title="Récompenses"
+        action={
+          <Button variant="ghost" size="sm" onClick={() => router.push("/md-06")}>
+            Retour
+          </Button>
+        }
+      />
 
       {!donneur ? (
-        <p className="text-sm text-muted-foreground">
-          Compte non vérifié — les récompenses arrivent après votre premier don validé en personne.
-        </p>
+        <EmptyState
+          icon={Award}
+          message="Compte non vérifié — les récompenses arrivent après votre premier don validé en personne."
+        />
       ) : (
         <RecompensesContenu nombreDons={donneur.nombreDonsEffectues} />
       )}
-    </main>
+    </Screen>
   );
 }
 
@@ -58,12 +64,7 @@ function RecompensesContenu({ nombreDons }: { nombreDons: number }) {
         <CardContent className="flex flex-col gap-2">
           {suivant ? (
             <>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-all"
-                  style={{ width: `${progression}%` }}
-                />
-              </div>
+              <ProgressBar pourcentage={progression} />
               <p className="text-xs text-muted-foreground">
                 Encore {suivant.seuilMin - nombreDons} don(s) avant le palier {suivant.nom}
               </p>

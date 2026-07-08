@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
+import { GroupeSanguinTag } from "@d-red/ui/components/groupe-sanguin-tag";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Screen } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
 /** MD-05 — Profil initial : profil de démo reconnu par téléphone, ou compte non vérifié. */
@@ -20,13 +22,20 @@ export default function ProfilPage() {
 
   function continuer() {
     if (!donneur) {
-      setSession({ ...session, nomSaisi: nom.trim() || "Donneur" });
+      if (!nom.trim()) return;
+      setSession({ ...session, nomSaisi: nom.trim() });
     }
     router.push("/md-06");
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-6">
+    <Screen className="justify-center gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Votre profil</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {donneur ? "Ce numéro correspond à un donneur du réseau." : "Créons votre compte."}
+        </p>
+      </div>
       {donneur ? (
         <Card>
           <CardHeader>
@@ -34,7 +43,7 @@ export default function ProfilPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <span className="font-display text-3xl text-primary">{donneur.groupeSanguin}</span>
+              <GroupeSanguinTag groupe={donneur.groupeSanguin} taille="lg" />
               <Badge variant={donneur.statutVerification === "VERIFIE" ? "default" : "secondary"}>
                 {donneur.statutVerification === "VERIFIE" ? "Donneur vérifié" : "Non vérifié"}
               </Badge>
@@ -60,7 +69,9 @@ export default function ProfilPage() {
           </CardContent>
         </Card>
       )}
-      <Button onClick={continuer}>Continuer</Button>
-    </main>
+      <Button size="lg" onClick={continuer} disabled={!donneur && !nom.trim()}>
+        Continuer
+      </Button>
+    </Screen>
   );
 }

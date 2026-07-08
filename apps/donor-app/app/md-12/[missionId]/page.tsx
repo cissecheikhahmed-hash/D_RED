@@ -4,7 +4,11 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useDredStore } from "@d-red/sync-client";
+import { EmptyState } from "@d-red/ui/components/empty-state";
+import { SearchX } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Screen } from "@/components/screen";
 
 /** MD-12 — QR code présenté à l'accueil de l'établissement (généré côté client, purement visuel). */
 export default function QrCodePage() {
@@ -22,25 +26,30 @@ export default function QrCodePage() {
 
   if (!mission || !demande) {
     return (
-      <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 items-center justify-center p-6">
-        <p className="text-muted-foreground">Mission introuvable.</p>
-      </main>
+      <Screen className="items-center justify-center gap-4 text-center">
+        <EmptyState icon={SearchX} message="Mission introuvable." />
+        <Button onClick={() => router.push("/md-06")}>Retour</Button>
+      </Screen>
     );
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
+    <Screen className="items-center justify-center gap-6 text-center">
       <div>
-        <h1 className="text-2xl font-semibold">Présentez ce code à l&apos;accueil</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Présentez ce code à l&apos;accueil</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          L&apos;équipe sur place scanne ce QR pour confirmer votre arrivée.
+          L&apos;équipe sur place scanne ce QR pour confirmer votre arrivée. Cet écran avance
+          automatiquement dès le scan.
         </p>
       </div>
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <QRCodeSVG value={demande.id} size={220} />
         </CardContent>
       </Card>
-    </main>
+      <Button variant="ghost" onClick={() => router.push(`/md-11/${mission.id}`)}>
+        Retour au guidage
+      </Button>
+    </Screen>
   );
 }

@@ -3,10 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore, dredApi } from "@d-red/sync-client";
+import { GroupeSanguinTag } from "@d-red/ui/components/groupe-sanguin-tag";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
 /** MD-06 — Dashboard / écran de veille du donneur. */
@@ -41,17 +43,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Bonjour {donneur?.nom ?? session.nomSaisi}</h1>
-        <Button variant="ghost" size="sm" onClick={() => { clearSession(); router.push("/md-03"); }}>
-          Changer de profil
-        </Button>
-      </div>
+    <Screen className="gap-6">
+      <ScreenHeader
+        title={`Bonjour ${donneur?.nom ?? session.nomSaisi ?? ""}`}
+        action={
+          <Button variant="ghost" size="sm" onClick={() => { clearSession(); router.push("/md-03"); }}>
+            Changer de profil
+          </Button>
+        }
+      />
 
       {missionArrivee && (
         <Card className="border-success/25 bg-success/5">
-          <CardContent className="flex items-center justify-between gap-3 pt-6">
+          <CardContent className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium">Don en cours — présence confirmée</p>
               <p className="text-xs text-muted-foreground">
@@ -93,10 +97,10 @@ export default function DashboardPage() {
 
       {donneur && (
         <Card>
-          <CardContent className="flex items-center justify-between pt-6">
+          <CardContent className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Groupe sanguin</p>
-              <p className="font-display text-3xl text-primary">{donneur.groupeSanguin}</p>
+              <GroupeSanguinTag groupe={donneur.groupeSanguin} className="text-3xl" />
             </div>
             <Badge variant="secondary">{donneur.nombreDonsEffectues} dons effectués</Badge>
           </CardContent>
@@ -111,6 +115,6 @@ export default function DashboardPage() {
           Voir mes récompenses
         </Button>
       </div>
-    </main>
+    </Screen>
   );
 }

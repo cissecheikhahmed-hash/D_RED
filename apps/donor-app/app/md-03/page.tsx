@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Screen } from "@/components/screen";
 import { TELEPHONE_TEMP_KEY } from "@/lib/donneurSession";
 
 /** MD-03 — Saisie du téléphone (authentification simulée, pas de vrai SMS envoyé). */
@@ -19,7 +20,7 @@ export default function TelephonePage() {
   }
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-center gap-6 p-6">
+    <Screen className="justify-center gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Votre numéro</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -36,9 +37,9 @@ export default function TelephonePage() {
           onChange={(e) => setTelephone(e.target.value)}
         />
       </div>
-      <Button onClick={continuer} disabled={!telephone.trim()}>
+      <Button size="lg" onClick={continuer} disabled={!telephone.trim()}>
         Continuer
       </Button>
-    </main>
+    </Screen>
   );
 }

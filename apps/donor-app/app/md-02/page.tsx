@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Screen } from "@/components/screen";
 import {
   AlerteIllustration,
   DisponibiliteIllustration,
@@ -36,7 +37,7 @@ export default function OnboardingPage() {
   const dernier = index === SLIDES.length - 1;
 
   return (
-    <main className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-1 flex-col justify-between p-6">
+    <Screen className="justify-between">
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <Illustration className="size-40" />
         <h1 className="text-2xl font-semibold">{slide.titre}</h1>
@@ -51,9 +52,7 @@ export default function OnboardingPage() {
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <Button
-          onClick={() => (dernier ? router.push("/md-03") : setIndex((i) => i + 1))}
-        >
+        <Button size="lg" onClick={() => (dernier ? router.push("/md-03") : setIndex((i) => i + 1))}>
           {dernier ? "Commencer" : "Suivant"}
         </Button>
         {!dernier && (
@@ -62,6 +61,6 @@ export default function OnboardingPage() {
           </Button>
         )}
       </div>
-    </main>
+    </Screen>
   );
 }
