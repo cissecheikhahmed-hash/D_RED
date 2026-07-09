@@ -1,7 +1,8 @@
 /**
  * Illustrations dessinées à la main (SVG inline) — pas d'images externes,
- * cohérent avec la contrainte "zéro dépendance réseau" déjà appliquée à la
- * carte simulée et aux polices auto-hébergées. Palette D.RED uniquement.
+ * cohérent avec la contrainte "zéro dépendance réseau" déjà appliquée aux
+ * tuiles de carte locales et aux polices auto-hébergées. Palette D.RED
+ * uniquement.
  */
 
 interface IllustrationProps {
@@ -76,34 +77,6 @@ export function VerifieIllustration({ className }: IllustrationProps) {
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/** MD-11 — guidage : silhouette urbaine, route en pointillés, marqueur de destination. */
-export function GuidageIllustration({ className }: IllustrationProps) {
-  return (
-    <svg viewBox="0 0 320 180" className={className} aria-hidden="true">
-      <rect x="0" y="0" width="320" height="180" fill="var(--color-beige)" />
-      <g opacity="0.5" fill="var(--color-ink)">
-        <rect x="20" y="90" width="24" height="50" />
-        <rect x="52" y="70" width="20" height="70" />
-        <rect x="250" y="60" width="22" height="80" />
-        <rect x="278" y="85" width="24" height="55" />
-      </g>
-      <path
-        d="M20 150 Q 100 60 160 100 T 300 40"
-        fill="none"
-        stroke="var(--color-dred)"
-        strokeWidth="4"
-        strokeDasharray="10 8"
-        strokeLinecap="round"
-      />
-      <circle cx="20" cy="150" r="7" fill="var(--color-ink)" />
-      <path
-        d="M300 20C300 20 286 34 286 43.5C286 51.5 292.3 58 300 58C307.7 58 314 51.5 314 43.5C314 34 300 20 300 20Z"
-        fill="var(--color-dred)"
       />
     </svg>
   );

@@ -85,10 +85,14 @@ simultanée infra+donneurs pour le niveau Critique).
 ## Stack technique
 
 Next.js (App Router) / React / TypeScript strict · Tailwind CSS + Shadcn UI +
-Lucide Icons · Zustand · React Hook Form + Zod · carte de navigation
-**simulée** (SVG/illustration, pas de Leaflet/tuiles réelles — décision
-délibérée pour ne jamais dépendre du wifi pendant une démo live) · QR code
-généré côté client, purement visuel.
+Lucide Icons · Zustand · React Hook Form + Zod · carte de navigation MD-11 :
+**vraie carte Leaflet sur tuiles OSM pré-téléchargées et committées**
+(`apps/donor-app/public/tiles`, zone Dakar/Thiès, script
+`apps/donor-app/scripts/download-tiles.mjs`) — décision du 2026-07-08
+remplaçant l'illustration SVG simulée, tout en gardant la contrainte
+d'origine : **aucune requête réseau pendant une démo live** (les tuiles sont
+servies localement, jamais depuis tile.openstreetmap.org à l'exécution) ·
+QR code généré côté client, purement visuel.
 
 ## Design system
 

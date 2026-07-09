@@ -51,17 +51,12 @@ le détail des décisions produit).
 
 - QR code : reste purement visuel (`qrcode.react`), aucune vraie lecture
   caméra côté hôpital (décision volontaire du brief).
-- **Carte de guidage (MD-11) — changement de décision demandé le 2026-07-08** :
-  l'utilisateur veut à terme une **vraie carte** de la zone (pas l'illustration
-  SVG simulée), malgré le risque de dépendance réseau pendant une démo live.
-  Ceci renverse la décision "carte simulée" documentée dans `CLAUDE.md` et
-  actée à plusieurs reprises précédemment — à ne pas appliquer sans repasser
-  par `CLAUDE.md` d'abord (le brief y fait explicitement référence comme
-  "décision finale"). Résolution convenue avec l'utilisateur : carte réelle
-  **avec un fallback local/en cache de la zone de démo** (ex. tuiles
-  pré-téléchargées ou capture statique de Dakar/Thiès) pour ne pas dépendre
-  d'une vraie connexion pendant la présentation. Explicitement mis de côté
-  pour plus tard, pas pour l'instant.
+- ~~**Carte de guidage (MD-11)**~~ **Fait le 2026-07-09** : vraie carte
+  Leaflet sur tuiles OSM pré-téléchargées et committées
+  (`apps/donor-app/public/tiles`, 381 tuiles Dakar/Thiès z10-14, ~5,5 Mo,
+  script `scripts/download-tiles.mjs`) — servies localement, zéro requête
+  réseau en démo. `CLAUDE.md` mis à jour. L'itinéraire reste une ligne
+  simulée. Hors périmètre : routage réel, suivi de position en direct.
 
 ## CI
 

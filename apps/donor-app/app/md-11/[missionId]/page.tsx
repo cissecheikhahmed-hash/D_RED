@@ -7,10 +7,10 @@ import { distanceKm, formatDistanceKm, formatEtaMinutes, simulateEtaMinutes } fr
 import { EmptyState } from "@d-red/ui/components/empty-state";
 import { Loader2, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GuidageIllustration } from "@/components/illustrations";
+import { RouteMap } from "@/components/route-map";
 import { Screen } from "@/components/screen";
 
-/** MD-11 — Guidage GPS simulé (illustration, pas de vraie carte) + désengagement. */
+/** MD-11 — Guidage GPS sur carte réelle (tuiles locales) + désengagement. */
 export default function GuidagePage() {
   const params = useParams<{ missionId: string }>();
   const router = useRouter();
@@ -49,9 +49,12 @@ export default function GuidagePage() {
 
   return (
     <Screen className="justify-between">
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 overflow-hidden rounded-xl bg-secondary">
-        <GuidageIllustration className="w-full" />
-        <p className="text-sm text-muted-foreground">Itinéraire vers {etablissement.nom}</p>
+      <div className="relative min-h-56 flex-1 overflow-hidden rounded-xl border border-border">
+        <RouteMap
+          depart={donneur.position}
+          arrivee={etablissement.position}
+          className="absolute inset-0"
+        />
       </div>
 
       <div className="flex flex-col items-center gap-1 py-4 text-center">
