@@ -3,12 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDredStore, dredApi } from "@d-red/sync-client";
+import { trouverPalier } from "@d-red/utils";
 import { GroupeSanguinTag } from "@d-red/ui/components/groupe-sanguin-tag";
-import { Badge } from "@/components/ui/badge";
+import { Award, ChevronRight, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Screen, ScreenHeader } from "@/components/screen";
+import { BloodDropMark } from "@/components/illustrations";
+import { Screen } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
 /** MD-06 — Dashboard / écran de veille du donneur. */
@@ -42,78 +44,149 @@ export default function DashboardPage() {
     void dredApi.definirDisponibilite(donneur.id, disponible);
   }
 
+  const disponible = donneur?.disponible ?? false;
+
   return (
-    <Screen className="gap-6">
-      <ScreenHeader
-        title={`Bonjour ${donneur?.nom ?? session.nomSaisi ?? ""}`}
-        action={
-          <Button variant="ghost" size="sm" onClick={() => { clearSession(); router.push("/md-03"); }}>
+    <Screen className="gap-0 p-0">
+      <div className="relative overflow-hidden rounded-b-3xl bg-primary px-6 pb-14 pt-6 text-primary-foreground">
+        <BloodDropMark className="absolute -right-3 -top-5 h-28 w-24 opacity-10" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-primary-foreground/70">Bonjour</p>
+            <h1 className="truncate text-2xl font-semibold tracking-tight">
+              {donneur?.nom ?? session.nomSaisi ?? ""}
+            </h1>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+            onClick={() => {
+              clearSession();
+              router.push("/md-03");
+            }}
+          >
             Changer de profil
           </Button>
-        }
-      />
-
-      {missionArrivee && (
-        <Card className="border-success/25 bg-success/5">
-          <CardContent className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">Don en cours — présence confirmée</p>
-              <p className="text-xs text-muted-foreground">
-                L&apos;équipe sur place finalise votre don. Merci !
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push(`/md-13/${missionArrivee.id}`)}
-            >
-              Voir
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Écran de veille</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Disponible pour une mobilisation</span>
-            <Switch
-              checked={donneur?.disponible ?? false}
-              disabled={!donneur}
-              onCheckedChange={basculerDisponibilite}
-            />
+        </div>
+        {donneur && (
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-primary-foreground/15 px-3 py-1 font-display text-xs tracking-wide">
+              {donneur.groupeSanguin}
+            </span>
+            <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-xs">
+              {donneur.statutVerification === "VERIFIE" ? "Donneur vérifié" : "Non vérifié"}
+            </span>
           </div>
-          <p className="text-xs text-muted-foreground">Zone de veille : Dakar</p>
-          {!donneur && (
-            <p className="text-xs text-muted-foreground">
-              Compte non vérifié — aucune mobilisation possible pour l&apos;instant.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      {donneur && (
-        <Card>
-          <CardContent className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Groupe sanguin</p>
-              <GroupeSanguinTag groupe={donneur.groupeSanguin} className="text-3xl" />
+      <div className="relative -mt-8 flex flex-1 flex-col gap-4 px-6 pb-6">
+        {missionArrivee && (
+          <Card className="border-success/25 bg-success/5">
+            <CardContent className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Don en cours — présence confirmée</p>
+                <p className="text-xs text-muted-foreground">
+                  L&apos;équipe sur place finalise votre don. Merci !
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => router.push(`/md-13/${missionArrivee.id}`)}
+              >
+                Voir
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="shadow-lg shadow-ink/5">
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary">
+                  {disponible && (
+                    <span className="absolute size-4 animate-ping rounded-full bg-success/30 [animation-duration:1.8s]" />
+                  )}
+                  <span
+                    className={`relative size-2.5 rounded-full ${disponible ? "bg-success" : "bg-muted-foreground/40"}`}
+                  />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {disponible ? "Veille active" : "Veille désactivée"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {disponible
+                      ? "Vous pouvez être mobilisé — zone : Dakar"
+                      : "Aucune mobilisation ne vous sera envoyée"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={disponible}
+                disabled={!donneur}
+                onCheckedChange={basculerDisponibilite}
+              />
             </div>
-            <Badge variant="secondary">{donneur.nombreDonsEffectues} dons effectués</Badge>
+            {!donneur && (
+              <p className="text-xs text-muted-foreground">
+                Compte non vérifié — aucune mobilisation possible pour l&apos;instant.
+              </p>
+            )}
           </CardContent>
         </Card>
-      )}
 
-      <div className="flex flex-col gap-2">
-        <Button variant="outline" onClick={() => router.push("/md-14")}>
-          Voir mon historique
-        </Button>
-        <Button variant="outline" onClick={() => router.push("/md-10")}>
-          Voir mes récompenses
-        </Button>
+        {donneur && (
+          <Card>
+            <CardContent className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-secondary">
+                  <GroupeSanguinTag groupe={donneur.groupeSanguin} taille="lg" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Groupe sanguin</p>
+                  <p className="text-xs text-muted-foreground">
+                    Enregistré auprès du réseau CNTS
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/md-14")}
+            className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary"
+          >
+            <span className="flex size-9 items-center justify-center rounded-full bg-secondary text-primary">
+              <History className="size-4.5" />
+            </span>
+            <span className="text-sm font-medium">Historique</span>
+            <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              {donneur ? `${donneur.nombreDonsEffectues} don${donneur.nombreDonsEffectues > 1 ? "s" : ""}` : "Voir"}
+              <ChevronRight className="size-3.5" />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/md-10")}
+            className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary"
+          >
+            <span className="flex size-9 items-center justify-center rounded-full bg-secondary text-primary">
+              <Award className="size-4.5" />
+            </span>
+            <span className="text-sm font-medium">Récompenses</span>
+            <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              {donneur ? `Palier ${trouverPalier(donneur.nombreDonsEffectues).nom}` : "Voir"}
+              <ChevronRight className="size-3.5" />
+            </span>
+          </button>
+        </div>
       </div>
     </Screen>
   );
