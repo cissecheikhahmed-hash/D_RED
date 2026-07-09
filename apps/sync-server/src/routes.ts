@@ -246,5 +246,6 @@ router.post("/autonomie/activer", (_req, res) => {
 
 router.post("/autonomie/desactiver", (_req, res) => {
   desactiverAutonomie();
+  broadcastState();
   res.json({ actif: autonomie.actif });
 });

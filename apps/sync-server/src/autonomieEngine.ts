@@ -28,6 +28,27 @@ import {
 
 const INTERVALLE_MS = 2500;
 
+// Âge minimal d'un statut avant que le tick ne simule la décision humaine
+// suivante. Sans ces paliers, une demande EN_ROUTE traversait ARRIVED →
+// DONATION_COMPLETED → CLOSED dans un même tick (un seul broadcast) : les
+// fenêtres ouvertes ne voyaient jamais les statuts intermédiaires et l'écran
+// QR du donneur (MD-12) restait bloqué. Une seule transition par demande et
+// par tick garantit que chaque étape reste visible pendant une démo vitrine.
+const DELAI_REPONSE_DONNEUR_MS = 4_000; // MD-07/MD-08
+const DELAI_CONFIRMATION_CNTS_MS = 4_000; // WC-02
+const DELAI_TRAJET_MS = 12_000; // laisse MD-11 puis le QR MD-12 visibles
+const DELAI_DON_MS = 8_000; // WC-04 don effectué
+const DELAI_BILAN_MS = 5_000; // WC-04 bilan sécurisé
+
+function ageStatutMs(demande: Demande): number {
+  const entreLe = demande.historiqueStatuts?.[demande.status] ?? demande.createdAt;
+  return Date.now() - new Date(entreLe).getTime();
+}
+
+function ageNotificationMs(notifiedAt: string): number {
+  return Date.now() - new Date(notifiedAt).getTime();
+}
+
 // Biaisé vers les groupes ayant un donneur viable dans les données de démo,
 // pour que la boucle non surveillée reste majoritairement un "succès" —
 // avec tout de même un peu de Scénario F (aucun donneur) pour l'authenticité.
@@ -73,6 +94,7 @@ function tick(): void {
 
   // Simule MD-07/MD-08 : répond aux donneurs notifiés (80% accepte, 20% refuse).
   for (const mission of store.missions.filter((m) => m.status === "NOTIFIED")) {
+    if (ageNotificationMs(mission.notifiedAt) < DELAI_REPONSE_DONNEUR_MS) continue;
     const demande = store.getDemande(mission.demandeId);
     if (!demande) continue;
     if (Math.random() < 0.2) {
@@ -112,22 +134,26 @@ function tick(): void {
 
   // Simule WC-02 : confirme le premier candidat ayant accepté.
   for (const demande of store.demandes.filter((d) => d.status === "PRE_RESERVED")) {
+    if (ageStatutMs(demande) < DELAI_CONFIRMATION_CNTS_MS) continue;
     const candidat = store.missionsForDemande(demande.id).find((m) => m.status === "PRE_RESERVED");
     if (candidat) confirmerMission(demande, candidat);
   }
 
   // Simule WH-05 : scan de réception.
   for (const demande of store.demandes.filter((d) => d.status === "EN_ROUTE")) {
+    if (ageStatutMs(demande) < DELAI_TRAJET_MS) continue;
     marquerArrivee(demande);
   }
 
   // Simule WC-04 : don effectué.
   for (const demande of store.demandes.filter((d) => d.status === "ARRIVED")) {
+    if (ageStatutMs(demande) < DELAI_DON_MS) continue;
     marquerDonEffectue(demande);
   }
 
   // Simule WC-04 : bilan sécurisé envoyé (clôture).
   for (const demande of store.demandes.filter((d) => d.status === "DONATION_COMPLETED")) {
+    if (ageStatutMs(demande) < DELAI_BILAN_MS) continue;
     const mission = store.missionsForDemande(demande.id).find((m) => m.status === "DONATION_COMPLETED");
     const donneur = mission ? store.getDonneur(mission.donneurId) : undefined;
     if (mission && donneur) envoyerBilan(demande, mission, donneur);

@@ -83,7 +83,10 @@ export default function DashboardPage() {
 
       <div className="relative -mt-8 flex flex-1 flex-col gap-4 px-6 pb-6">
         {missionArrivee && (
-          <Card className="border-success/25 bg-success/5">
+          // Fond opaque obligatoire : cette carte chevauche le héros rouge
+          // (-mt-8) — un simple bg-success/5 translucide laissait le rouge
+          // transparaître derrière la bannière.
+          <Card className="border-success/25 bg-[color-mix(in_srgb,var(--color-success)_6%,var(--color-card))]">
             <CardContent className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">Don en cours — présence confirmée</p>

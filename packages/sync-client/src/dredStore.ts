@@ -9,6 +9,8 @@ interface Snapshot {
   demandes: Demande[];
   missions: Mission[];
   resultats: ResultatAnalyse[];
+  /** Vrai quand le sync-server joue seul les rôles humains (Mode Autonome). */
+  autonomieActive: boolean;
 }
 
 interface DredState extends Snapshot {
@@ -29,6 +31,7 @@ export const useDredStore = create<DredState>(() => ({
   demandes: [],
   missions: [],
   resultats: [],
+  autonomieActive: false,
   connecte: false,
   pret: false,
 }));

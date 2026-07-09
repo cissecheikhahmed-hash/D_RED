@@ -491,26 +491,40 @@ async function testModeAutonome() {
   await restart();
 
   const { data: avantActivation } = await get("/state");
-  const totalAvant = avantActivation.demandes.length;
+  assert(
+    avantActivation.autonomieActive === false,
+    "le snapshot expose autonomieActive=false au repos",
+  );
+  const sommeDonsAvant = avantActivation.donneurs.reduce((s, d) => s + d.nombreDonsEffectues, 0);
 
   await post("/autonomie/activer");
   const { data: statutActif } = await get("/autonomie/status");
   assert(statutActif.actif === true, "activer bascule bien le statut à actif");
-
-  await sleep(9000);
-  const { data: apres9s } = await get("/state");
+  const { data: stateActif } = await get("/state");
   assert(
-    apres9s.demandes.length > totalAvant,
-    "de nouvelles demandes sont créées automatiquement sans aucune action humaine",
+    stateActif.autonomieActive === true,
+    "le snapshot expose autonomieActive=true (consommé par l'app donneur)",
   );
+
+  // Les demandes seed gelées (horodatages anciens) reprennent leur progression,
+  // une transition par tick : dem_7 (DONATION_COMPLETED) est clôturée en
+  // quelques ticks et incrémente le compteur de son donneur.
+  await sleep(12000);
+  const { data: apres12s } = await get("/state");
+  const sommeDonsApres = apres12s.donneurs.reduce((s, d) => s + d.nombreDonsEffectues, 0);
   assert(
-    apres9s.donneurs.some((d) => d.nombreDonsEffectues > 0),
-    "au moins un donneur a un compteur de dons incrémenté (chaîne complète simulée jusqu'au bilan)",
+    sommeDonsApres > sommeDonsAvant,
+    "la chaîne complète tourne sans action humaine (bilan envoyé, compteur incrémenté)",
   );
 
   await post("/autonomie/desactiver");
   const { data: statutInactif } = await get("/autonomie/status");
   assert(statutInactif.actif === false, "désactiver bascule bien le statut à inactif");
+  const { data: stateInactif } = await get("/state");
+  assert(
+    stateInactif.autonomieActive === false,
+    "le snapshot expose autonomieActive=false après désactivation (broadcast inclus)",
+  );
 
   const { data: apresDesactivation } = await get("/state");
   await sleep(4000);
@@ -519,6 +533,56 @@ async function testModeAutonome() {
     unPeuPlusTard.demandes.length === apresDesactivation.demandes.length,
     "plus aucune nouvelle demande n'est créée une fois désactivé",
   );
+}
+
+// --- Mode Autonome : chaque statut du cycle reste observable (régression écran QR bloqué) ---
+async function testModeAutonomeSequence() {
+  console.log("\n=== Mode Autonome : séquencement visible des statuts ===");
+  await restart();
+  // Libère Aïssatou Ba (PRE_RESERVED sur dem_4) pour garantir des donneurs O- à dem_1.
+  await resoudreDemandeJusquauBout("dem_4", "mis_dem4_aissatou");
+
+  await post("/autonomie/activer");
+
+  // Suit dem_1 (seed O-, CREATED) : le Mode Autonome doit lui faire traverser
+  // chaque statut assez lentement pour qu'un client (écran branché sur
+  // state:sync) voie chacun d'eux passer — la régression historique enchaînait
+  // ARRIVED → DONATION_COMPLETED → CLOSED dans un seul tick avec un seul
+  // broadcast, laissant l'écran QR du donneur (MD-12) bloqué à vie.
+  const observes = [];
+  const debut = Date.now();
+  while (Date.now() - debut < 120_000) {
+    const { data } = await get("/state");
+    const statut = data.demandes.find((d) => d.id === "dem_1")?.status;
+    if (statut && observes[observes.length - 1] !== statut) observes.push(statut);
+    if (statut === "CLOSED") break;
+    await sleep(250);
+  }
+
+  const chaine = observes.join(" → ");
+  for (const statut of ["EN_ROUTE", "ARRIVED", "DONATION_COMPLETED", "CLOSED"]) {
+    assert(observes.includes(statut), `statut ${statut} observé (séquence : ${chaine})`);
+  }
+  assert(
+    observes.indexOf("ARRIVED") > observes.indexOf("EN_ROUTE") &&
+      observes.indexOf("DONATION_COMPLETED") > observes.indexOf("ARRIVED"),
+    "les statuts post-scan apparaissent dans l'ordre, sans saut",
+  );
+
+  // La boucle infinie enchaîne une nouvelle demande une fois tout clôturé.
+  const debutBoucle = Date.now();
+  let enchainee = false;
+  while (Date.now() - debutBoucle < 60_000) {
+    const { data } = await get("/state");
+    if (data.demandes.length > 8) {
+      enchainee = true;
+      break;
+    }
+    await sleep(500);
+  }
+  assert(enchainee, "une nouvelle demande aléatoire est créée après clôture des demandes seed");
+
+  await post("/autonomie/desactiver");
 }
 
 async function main() {
@@ -537,6 +601,7 @@ async function main() {
     testDecisionPolicies,
     testModeDemo,
     testModeAutonome,
+    testModeAutonomeSequence,
   ];
 
   for (const test of tests) {

@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Screen } from "@/components/screen";
+import { useSuiviMission } from "@/lib/useSuiviMission";
 
 const schema = z.object({
   dateDernierDon: z.string().optional(),
@@ -32,6 +33,7 @@ const QUESTIONS: Array<{ name: "voyageRecent" | "traitementEnCours" | "seSentBie
 export default function QuestionnairePage() {
   const params = useParams<{ missionId: string }>();
   const router = useRouter();
+  useSuiviMission(params.missionId);
   const {
     control,
     register,

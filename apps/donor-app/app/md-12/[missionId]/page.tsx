@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useDredStore } from "@d-red/sync-client";
@@ -9,6 +8,7 @@ import { SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Screen } from "@/components/screen";
+import { useSuiviMission } from "@/lib/useSuiviMission";
 
 /** MD-12 — QR code présenté à l'accueil de l'établissement (généré côté client, purement visuel). */
 export default function QrCodePage() {
@@ -16,13 +16,10 @@ export default function QrCodePage() {
   const router = useRouter();
   const missions = useDredStore((s) => s.missions);
   const demandes = useDredStore((s) => s.demandes);
+  useSuiviMission(params.missionId);
 
   const mission = missions.find((m) => m.id === params.missionId);
   const demande = demandes.find((d) => d.id === mission?.demandeId);
-
-  useEffect(() => {
-    if (demande?.status === "ARRIVED") router.push(`/md-13/${params.missionId}`);
-  }, [demande, params.missionId, router]);
 
   if (!mission || !demande) {
     return (

@@ -1,27 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useDredStore, dredApi } from "@d-red/sync-client";
+import { dredApi } from "@d-red/sync-client";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RegulationIllustration } from "@/components/illustrations";
 import { Screen } from "@/components/screen";
+import { useSuiviMission } from "@/lib/useSuiviMission";
 
 /** MD-09 — Attente de la régulation CNTS après acceptation. */
 export default function AttenteRegulationPage() {
   const params = useParams<{ missionId: string }>();
   const router = useRouter();
-  const missions = useDredStore((s) => s.missions);
-  const mission = missions.find((m) => m.id === params.missionId);
   const [desistementEnCours, setDesistementEnCours] = useState(false);
-
-  useEffect(() => {
-    if (!mission) return;
-    if (mission.status === "EN_ROUTE") router.push(`/md-11/${mission.id}`);
-    if (mission.status === "EJECTED") router.push("/md-06");
-  }, [mission, router]);
+  useSuiviMission(params.missionId);
 
   async function seDesister() {
     setDesistementEnCours(true);

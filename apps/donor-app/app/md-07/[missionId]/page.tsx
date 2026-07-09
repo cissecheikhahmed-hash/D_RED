@@ -10,6 +10,7 @@ import { Clock, Loader2, MapPin, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Screen } from "@/components/screen";
+import { useSuiviMission } from "@/lib/useSuiviMission";
 
 /** MD-07 — Fiche mission critique. */
 export default function MissionPage() {
@@ -20,13 +21,14 @@ export default function MissionPage() {
   const etablissements = useDredStore((s) => s.etablissements);
   const donneurs = useDredStore((s) => s.donneurs);
   const [refusEnCours, setRefusEnCours] = useState(false);
+  useSuiviMission(params.missionId);
 
   const mission = missions.find((m) => m.id === params.missionId);
   const demande = demandes.find((d) => d.id === mission?.demandeId);
   const etablissement = etablissements.find((e) => e.id === demande?.etablissementId);
   const donneur = donneurs.find((d) => d.id === mission?.donneurId);
 
-  if (!mission || !demande || !etablissement || mission.status !== "NOTIFIED") {
+  if (!mission || !demande || !etablissement) {
     return (
       <Screen className="items-center justify-center gap-4 text-center">
         <EmptyState icon={SearchX} message="Cette mission n'est plus disponible." />
@@ -34,6 +36,10 @@ export default function MissionPage() {
       </Screen>
     );
   }
+
+  // Statut déjà au-delà de NOTIFIED : useSuiviMission redirige immédiatement —
+  // on n'affiche rien plutôt qu'un faux "mission plus disponible" d'une frame.
+  if (mission.status !== "NOTIFIED") return null;
 
   const distance = donneur ? distanceKm(donneur.position, etablissement.position) : 0;
   const eta = simulateEtaMinutes(distance);

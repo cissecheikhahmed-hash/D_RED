@@ -9,6 +9,7 @@ import { Loader2, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RouteMap } from "@/components/route-map";
 import { Screen } from "@/components/screen";
+import { useSuiviMission } from "@/lib/useSuiviMission";
 
 /** MD-11 — Guidage GPS sur carte réelle (tuiles locales) + désengagement. */
 export default function GuidagePage() {
@@ -19,6 +20,7 @@ export default function GuidagePage() {
   const etablissements = useDredStore((s) => s.etablissements);
   const donneurs = useDredStore((s) => s.donneurs);
   const [desistementEnCours, setDesistementEnCours] = useState(false);
+  useSuiviMission(params.missionId);
 
   const mission = missions.find((m) => m.id === params.missionId);
   const demande = demandes.find((d) => d.id === mission?.demandeId);

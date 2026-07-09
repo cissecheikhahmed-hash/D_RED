@@ -174,9 +174,10 @@ réelles (la boucle se figeait complètement sans eux) :
 ## Tests automatisés
 
 Suite d'intégration (`apps/sync-server/scripts/test-scenarios.mjs`,
-`pnpm --filter @d-red/sync-server test:scenarios`) : 43 assertions, tous les
-scénarios A/B/C/D/E/F/G + Decision Policies + Mode Démo + Mode Autonome,
-rejouables en quelques secondes contre le serveur réel — 43/43 au vert.
+`pnpm --filter @d-red/sync-server test:scenarios`) : 63 assertions, tous les
+scénarios A/B/C/D/E/F/G + Decision Policies + Mode Démo + Mode Autonome
+(boucle et séquencement des statuts), rejouables contre le serveur réel —
+63/63 au vert.
 
 ## Bugs trouvés et corrigés pendant la QA utilisateur
 
@@ -248,3 +249,36 @@ guidage → QR → scan WH-05 → console WC-04 → MD-13/MD-14), plus les varia
 refus/désistement, résolution par stock (A+ Standard), éjection Scénario E
 (O+ Critique en recherche parallèle), WC-03, WA-01 et Mode Autonome.
 **Validée par l'utilisateur sans aucun bug remonté.**
+
+## Mode Autonome « vitrine » + MD-13 enrichi (2026-07-09)
+
+Objectif : une fenêtre donneur laissée seule sur un stand doit dérouler tout
+le parcours visuellement, sans main humaine, puis revenir en veille.
+
+- **Cadencement serveur** (`autonomieEngine.ts`) : chaque transition simulée
+  attend désormais un délai minimal dans le statut courant (réponse donneur
+  4 s, confirmation CNTS 4 s, trajet 12 s, don 8 s, bilan 5 s) — une seule
+  transition par demande et par tick. Corrige la régression où ARRIVED →
+  DONATION_COMPLETED → CLOSED passaient dans un seul broadcast et laissaient
+  l'écran QR (MD-12) bloqué à vie.
+- **`autonomieActive` exposé** dans le snapshot (`store.ts` → `dredStore`),
+  avec re-broadcast à la désactivation : l'app donneur sait distinguer une
+  démo vitrine d'un parcours piloté à la main.
+- **`useSuiviMission`** (`apps/donor-app/lib/useSuiviMission.ts`) : hook
+  branché sur MD-07 → MD-13 qui garde l'écran affiché en phase avec le
+  statut serveur (redirection uniquement quand l'écran courant n'est plus
+  autorisé — la navigation manuelle MD-07/MD-08 et MD-11/MD-12 n'est jamais
+  écrasée). Remplace les `useEffect` de redirection dispersés de MD-09 et
+  MD-12. En Mode Autonome : MD-11 avance seul vers le QR après 5 s, MD-13
+  revient en veille MD-06 après 15 s une fois la demande clôturée.
+- **MD-13 réécrit** : trois états (don en cours après scan / don validé /
+  clôturé avec canal d'envoi du bilan réel), prénom, n-ième don, date, lieu,
+  palier de fidélité — et **carte de don partageable** : visuel 1080×1080
+  dessiné sur `<canvas>` aux couleurs des tokens (`lib/carteDon.ts`,
+  `components/carte-don.tsx`), export PNG réel + Web Share API avec repli
+  téléchargement. Zéro lib, zéro requête réseau.
+- Fond opaque sur la carte « don en cours » de MD-06 (le rouge du héros
+  transparaissait sous le `bg-success/5`).
+- Suite de tests étendue (nouveau test « séquencement visible des statuts »
+  qui suit dem_1 statut par statut jusqu'à CLOSED et vérifie l'enchaînement
+  d'une nouvelle demande).

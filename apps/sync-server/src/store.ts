@@ -6,6 +6,7 @@ import {
   resultats as resultatsSeed,
 } from "@d-red/mock-data";
 import type { Demande, Donneur, Etablissement, Mission, ResultatAnalyse } from "@d-red/types";
+import { autonomie } from "./autonomie.js";
 
 /**
  * État en mémoire uniquement — aucune persistance, aucune base de données.
@@ -39,6 +40,9 @@ class Store {
       demandes: this.demandes,
       missions: this.missions,
       resultats: this.resultats,
+      // Les clients (donor-app) en ont besoin pour distinguer une démo
+      // vitrine sans présentateur d'un parcours piloté à la main.
+      autonomieActive: autonomie.actif,
     };
   }
 
