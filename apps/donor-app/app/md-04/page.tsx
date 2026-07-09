@@ -15,6 +15,16 @@ function lireTelephoneTemp(): string {
   return sessionStorage.getItem(TELEPHONE_TEMP_KEY) ?? "";
 }
 
+/**
+ * Compare les numéros sur leurs 9 derniers chiffres (format national
+ * sénégalais) : "+221 77 123 45 05", "771234505" et "77-123-45-05"
+ * désignent le même donneur. Sans ça, une saisie sans espaces créait une
+ * session sans donneur associé — fenêtre à jamais silencieuse en démo.
+ */
+function normaliserTelephone(telephone: string): string {
+  return telephone.replace(/\D/g, "").slice(-9);
+}
+
 /** MD-04 — OTP simulé : n'importe quel code à 4 chiffres est accepté. */
 export default function OtpPage() {
   const router = useRouter();
@@ -25,7 +35,9 @@ export default function OtpPage() {
 
   function valider() {
     if (code.trim().length < 4) return;
-    const match = donneurs.find((d) => d.telephone === telephone);
+    const match = donneurs.find(
+      (d) => normaliserTelephone(d.telephone) === normaliserTelephone(telephone),
+    );
     setSession({ telephone, donneurId: match?.id ?? null, nomSaisi: null });
     router.push("/md-05");
   }
