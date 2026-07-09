@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
-import { DEMANDE_STATUS_LABELS } from "@d-red/types";
+import { PRODUIT_SANGUIN_LABELS } from "@d-red/types";
 import { formatDateFr } from "@d-red/utils";
-import { EmptyState } from "@d-red/ui/components/empty-state";
+import { GroupeSanguinTag } from "@d-red/ui/components/groupe-sanguin-tag";
 import { ListSkeleton } from "@d-red/ui/components/list-skeleton";
 import { MissionStatusBadge } from "@d-red/ui/components/status-badges";
-import { History } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { HistoriqueIllustration } from "@/components/illustrations";
 import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
@@ -22,6 +22,7 @@ export default function HistoriquePage() {
   const missions = useDredStore((s) => s.missions);
   const demandes = useDredStore((s) => s.demandes);
   const etablissements = useDredStore((s) => s.etablissements);
+  const resultats = useDredStore((s) => s.resultats);
   const pret = useDredStore((s) => s.pret);
 
   const donneur = donneurs.find((d) => d.id === session.donneurId);
@@ -40,28 +41,67 @@ export default function HistoriquePage() {
         }
       />
 
-      {donneur && <Badge variant="secondary">{donneur.nombreDonsEffectues} dons effectués</Badge>}
+      {donneur && (
+        <Card>
+          <CardContent className="flex items-center gap-4">
+            <HistoriqueIllustration className="size-20 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-display text-4xl text-primary">{donneur.nombreDonsEffectues}</p>
+              <p className="text-sm font-medium">
+                don{donneur.nombreDonsEffectues > 1 ? "s" : ""} effectué
+                {donneur.nombreDonsEffectues > 1 ? "s" : ""}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Merci pour votre engagement dans le réseau D.RED.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-col gap-3">
         {!pret && <ListSkeleton />}
         {pret && mesMissions.length === 0 && (
-          <EmptyState icon={History} message="Aucune mission pour le moment." />
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center">
+            <HistoriqueIllustration className="size-28" />
+            <p className="text-sm font-medium">Aucune mission pour le moment</p>
+            <p className="text-xs text-muted-foreground">
+              Vos missions et bilans d&apos;analyse apparaîtront ici après votre première
+              mobilisation.
+            </p>
+          </div>
         )}
         {mesMissions.map((mission) => {
           const demande = demandes.find((d) => d.id === mission.demandeId);
           const etablissement = etablissements.find((e) => e.id === demande?.etablissementId);
+          const resultat = resultats.find((r) => r.missionId === mission.id);
           return (
             <Card key={mission.id}>
-              <CardContent className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{etablissement?.nom ?? "Établissement"}</p>
+              <CardContent className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {demande && (
+                      <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                        <GroupeSanguinTag groupe={demande.groupeSanguin} taille="sm" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{etablissement?.nom ?? "Établissement"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateFr(mission.notifiedAt)}
+                        {demande && ` · ${PRODUIT_SANGUIN_LABELS[demande.produit]}`}
+                      </p>
+                    </div>
+                  </div>
                   <MissionStatusBadge status={mission.status} />
                 </div>
-                <p className="text-sm text-muted-foreground">{formatDateFr(mission.notifiedAt)}</p>
-                {demande && (
-                  <p className="text-xs text-muted-foreground">
-                    Demande : {DEMANDE_STATUS_LABELS[demande.status]}
-                  </p>
+                {resultat && (
+                  <div className="flex items-center gap-2 rounded-lg bg-success/5 px-3 py-2 text-xs text-success">
+                    <MailCheck className="size-3.5 shrink-0" />
+                    <span className="min-w-0 truncate">
+                      {resultat.canalEnvoiSimule} · {formatDateFr(resultat.envoyeAt)}
+                    </span>
+                  </div>
                 )}
               </CardContent>
             </Card>

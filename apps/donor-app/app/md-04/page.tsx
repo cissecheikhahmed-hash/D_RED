@@ -6,6 +6,7 @@ import { useDredStore } from "@d-red/sync-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OtpIllustration } from "@/components/illustrations";
 import { Screen } from "@/components/screen";
 import { TELEPHONE_TEMP_KEY, useDonneurSession } from "@/lib/donneurSession";
 
@@ -31,6 +32,7 @@ export default function OtpPage() {
 
   return (
     <Screen className="justify-center gap-6">
+      <OtpIllustration className="animate-in zoom-in-75 duration-500 size-28 self-center" />
       <div>
         <h1 className="text-2xl font-semibold">Code de vérification</h1>
         <p className="mt-1 text-sm text-muted-foreground">

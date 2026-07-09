@@ -3,12 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useDredStore } from "@d-red/sync-client";
 import { PALIERS, prochainPalier, trouverPalier } from "@d-red/utils";
-import { EmptyState } from "@d-red/ui/components/empty-state";
 import { ProgressBar } from "@d-red/ui/components/progress-bar";
-import { Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RecompensesIllustration } from "@/components/illustrations";
 import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
 
@@ -31,10 +30,13 @@ export default function RecompensesPage() {
       />
 
       {!donneur ? (
-        <EmptyState
-          icon={Award}
-          message="Compte non vérifié — les récompenses arrivent après votre premier don validé en personne."
-        />
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center">
+          <RecompensesIllustration className="size-28" />
+          <p className="text-sm text-muted-foreground">
+            Compte non vérifié — les récompenses arrivent après votre premier don validé en
+            personne.
+          </p>
+        </div>
       ) : (
         <RecompensesContenu nombreDons={donneur.nombreDonsEffectues} />
       )}
@@ -53,9 +55,7 @@ function RecompensesContenu({ nombreDons }: { nombreDons: number }) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center gap-3">
-          <div className="flex size-14 items-center justify-center rounded-full bg-secondary text-primary">
-            <Award className="size-7" />
-          </div>
+          <RecompensesIllustration className="size-16 shrink-0" />
           <div>
             <CardTitle>Palier {palier.nom}</CardTitle>
             <p className="text-sm text-muted-foreground">{nombreDons} dons effectués</p>

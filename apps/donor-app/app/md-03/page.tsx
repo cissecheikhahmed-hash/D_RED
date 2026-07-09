@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TelephoneIllustration } from "@/components/illustrations";
 import { Screen } from "@/components/screen";
 import { TELEPHONE_TEMP_KEY } from "@/lib/donneurSession";
 
@@ -21,6 +22,7 @@ export default function TelephonePage() {
 
   return (
     <Screen className="justify-center gap-6">
+      <TelephoneIllustration className="animate-in zoom-in-75 duration-500 size-28 self-center" />
       <div>
         <h1 className="text-2xl font-semibold">Votre numéro</h1>
         <p className="mt-1 text-sm text-muted-foreground">
