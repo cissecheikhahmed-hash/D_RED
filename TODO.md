@@ -63,3 +63,18 @@ le détail des décisions produit).
 - ~~Aucun dépôt GitHub distant configuré~~ **Fait le 2026-07-08** : dépôt
   privé `coreOverflow/D_RED` créé, `main` poussée, CI active et au vert
   (premier run corrigé : Node 22 requis par pnpm 11).
+
+## QA Mode Autonome « vitrine » (2026-07-09, fin de séance)
+
+- ~~Tirage aléatoire aveugle au stock~~ **Corrigé** : le mode autonome tire
+  désormais 85 % de ses demandes parmi les groupes ayant un donneur éligible
+  ET zéro stock (calcul dynamique) — sinon le scan infra résolvait la
+  demande et la fenêtre donneur ne voyait jamais rien.
+- ~~Abandon au premier tick sans candidat~~ **Corrigé** : délai de grâce de
+  20 s de retentatives avant de clôturer une demande sans candidat (les
+  donneurs momentanément occupés se libèrent entre-temps).
+- Reste ouvert : la « Re-notification différée » générale (hors mode
+  autonome) décrite plus haut dans Decision Engine.
+- Astuce démo : pour qu'une fenêtre donneur soit embarquée par la vitrine,
+  son groupe sanguin ne doit plus avoir de stock (le vider via quelques
+  demandes Standard résolues par infrastructure, ou se connecter O-/AB-).

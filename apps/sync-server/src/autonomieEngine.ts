@@ -49,10 +49,31 @@ function ageNotificationMs(notifiedAt: string): number {
   return Date.now() - new Date(notifiedAt).getTime();
 }
 
-// Biaisé vers les groupes ayant un donneur viable dans les données de démo,
-// pour que la boucle non surveillée reste majoritairement un "succès" —
-// avec tout de même un peu de Scénario F (aucun donneur) pour l'authenticité.
+// Tous les donneurs compatibles peuvent être momentanément occupés : on
+// laisse à la demande un délai de retentatives (une par tick) avant de
+// l'abandonner, plutôt que de la clôturer au premier tick sans candidat.
+const DELAI_ABANDON_MS = 20_000;
+
+// Repli statique si aucun groupe n'a de chemin donneur à cet instant.
 const GROUPES_AVEC_DONNEUR_VIABLE: GroupeSanguin[] = ["O-", "A+", "AB-", "O+"];
+
+/**
+ * Groupes dont une demande sera vraiment résolue par la mobilisation d'un
+ * donneur : au moins un donneur éligible ET aucune poche en stock (sinon le
+ * scan des infrastructures résout la demande avant — comportement métier
+ * normal, mais qui rendrait la vitrine invisible côté fenêtre donneur).
+ * Calculé en direct : le tirage suit l'évolution des stocks et des donneurs.
+ */
+function groupesAvecCheminDonneur(): GroupeSanguin[] {
+  const groupes = TOUS_LES_GROUPES.filter(
+    (groupe) =>
+      store.etablissements.every((e) => (e.stockPoches[groupe] ?? 0) === 0) &&
+      store.donneurs.some(
+        (d) => d.groupeSanguin === groupe && d.statutVerification === "VERIFIE" && d.disponible,
+      ),
+  );
+  return groupes.length > 0 ? groupes : GROUPES_AVEC_DONNEUR_VIABLE;
+}
 const TOUS_LES_GROUPES: GroupeSanguin[] = ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"];
 const PRODUITS: ProduitSanguin[] = ["SANG_TOTAL", "PLASMA", "PLAQUETTES", "CONCENTRE_GLOBULAIRE"];
 const NIVEAUX: NiveauUrgence[] = ["STANDARD", "PRIORITAIRE", "CRITIQUE"];
@@ -63,7 +84,7 @@ function auHasard<T>(tableau: readonly T[]): T {
 
 function creerDemandeAleatoire(): Demande {
   const groupeSanguin =
-    Math.random() < 0.85 ? auHasard(GROUPES_AVEC_DONNEUR_VIABLE) : auHasard(TOUS_LES_GROUPES);
+    Math.random() < 0.85 ? auHasard(groupesAvecCheminDonneur()) : auHasard(TOUS_LES_GROUPES);
   const creeLe = new Date().toISOString();
   return {
     id: generateId("dem"),
@@ -127,7 +148,7 @@ function tick(): void {
     const encoreActifs = store
       .missionsForDemande(demande.id)
       .filter((m) => m.status === "NOTIFIED" || m.status === "PRE_RESERVED");
-    if (encoreActifs.length === 0) {
+    if (encoreActifs.length === 0 && ageStatutMs(demande) >= DELAI_ABANDON_MS) {
       changerStatutDemande(demande, "CLOSED");
     }
   }
