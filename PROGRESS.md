@@ -238,3 +238,13 @@ Refonte visuelle sans toucher à la Core Loop ni au Decision Engine :
   CSS de la palette ; thumb du Switch en blanc explicite (le
   `bg-background` crème le rendait invisible sur fond clair). Type-check,
   ESLint, build Next et 55/55 tests scénarios au vert.
+
+## Séance de test manuelle post-polish (2026-07-08)
+
+Séance guidée à 3 fenêtres (Hôpital / CNTS / Donneur) sur le build après la
+passe de polish : Core Loop complète (WH-03 O- Critique → balayage infra →
+mobilisation donneur → MD-07 acceptation → MD-08 → validation WC-02 →
+guidage → QR → scan WH-05 → console WC-04 → MD-13/MD-14), plus les variantes
+refus/désistement, résolution par stock (A+ Standard), éjection Scénario E
+(O+ Critique en recherche parallèle), WC-03, WA-01 et Mode Autonome.
+**Validée par l'utilisateur sans aucun bug remonté.**
