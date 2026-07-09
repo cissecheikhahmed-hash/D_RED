@@ -7,6 +7,7 @@ import { ProgressBar } from "@d-red/ui/components/progress-bar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { IllustratedEmpty } from "@/components/illustrated-empty";
 import { RecompensesIllustration } from "@/components/illustrations";
 import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
@@ -30,13 +31,10 @@ export default function RecompensesPage() {
       />
 
       {!donneur ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center">
-          <RecompensesIllustration className="size-28" />
-          <p className="text-sm text-muted-foreground">
-            Compte non vérifié — les récompenses arrivent après votre premier don validé en
-            personne.
-          </p>
-        </div>
+        <IllustratedEmpty
+          illustration={<RecompensesIllustration className="size-28" />}
+          message="Compte non vérifié — les récompenses arrivent après votre premier don validé en personne."
+        />
       ) : (
         <RecompensesContenu nombreDons={donneur.nombreDonsEffectues} />
       )}

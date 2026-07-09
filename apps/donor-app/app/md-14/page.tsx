@@ -10,6 +10,7 @@ import { MissionStatusBadge } from "@d-red/ui/components/status-badges";
 import { MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { IllustratedEmpty } from "@/components/illustrated-empty";
 import { HistoriqueIllustration } from "@/components/illustrations";
 import { Screen, ScreenHeader } from "@/components/screen";
 import { useDonneurSession } from "@/lib/donneurSession";
@@ -62,14 +63,11 @@ export default function HistoriquePage() {
       <div className="flex flex-col gap-3">
         {!pret && <ListSkeleton />}
         {pret && mesMissions.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center">
-            <HistoriqueIllustration className="size-28" />
-            <p className="text-sm font-medium">Aucune mission pour le moment</p>
-            <p className="text-xs text-muted-foreground">
-              Vos missions et bilans d&apos;analyse apparaîtront ici après votre première
-              mobilisation.
-            </p>
-          </div>
+          <IllustratedEmpty
+            illustration={<HistoriqueIllustration className="size-28" />}
+            titre="Aucune mission pour le moment"
+            message="Vos missions et bilans d'analyse apparaîtront ici après votre première mobilisation."
+          />
         )}
         {mesMissions.map((mission) => {
           const demande = demandes.find((d) => d.id === mission.demandeId);
