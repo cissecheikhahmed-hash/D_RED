@@ -6,6 +6,28 @@ et donneurs pour réduire le délai d'accès au sang. Ce dépôt est un
 pas un produit de production. Voir `CLAUDE.md` pour le contexte produit
 complet et les conventions.
 
+## 🚀 Lancer la démo
+
+```bash
+pnpm install && pnpm dev
+```
+
+Puis cliquez (la démo tourne entièrement en local, aucune requête réseau
+externe — condition d'une démo live fiable) :
+
+| Application | Lien | Rôle |
+|---|---|---|
+| 📱 **Donneur** | [localhost:3000](http://localhost:3000) | Parcours mobile complet MD-01 → MD-14 (veille, mission, guidage GPS, QR, gratification) |
+| 🏥 **Hôpital / Établissement** | [localhost:3001/hospital/wh-01](http://localhost:3001/hospital/wh-01) | Urgence éclair WH-03, timeline temps réel WH-04, scan réception WH-05 |
+| 🩸 **CNTS (régulation)** | [localhost:3001/cnts/wc-01](http://localhost:3001/cnts/wc-01) | Supervision, validation téléphonique, Decision Policies, console labo |
+| 🗺️ **Vue nationale (Admin)** | [localhost:3001/admin/wa-01](http://localhost:3001/admin/wa-01) | Lecture seule, vue d'ensemble |
+| 🎛️ **Console démo** | [localhost:3001/demo](http://localhost:3001/demo) | Pause / pas-à-pas / redémarrage, **Mode Autonome** (la démo se joue toute seule) |
+
+Ouvrez Donneur + Hôpital + CNTS côte à côte (2-3 fenêtres) : chaque action
+d'un acteur se propage en temps réel chez les autres. Pour une vitrine sans
+présentateur, activez le **Mode Autonome** sur la console démo et laissez la
+fenêtre Donneur dérouler le parcours en boucle.
+
 ## Architecture
 
 ```
@@ -40,31 +62,16 @@ ou via Mode Démo).
 pnpm install
 ```
 
-## Lancer la démo
+## Lancement individuel des processus
 
-Trois processus doivent tourner simultanément (trois terminaux, ou
-`pnpm dev` à la racine qui les lance tous via Turborepo) :
-
-```bash
-pnpm dev
-```
-
-Ou individuellement :
+`pnpm dev` à la racine lance les trois processus via Turborepo. Ou
+individuellement, dans trois terminaux :
 
 ```bash
-pnpm --filter @d-red/sync-server dev   # http://localhost:4000
-pnpm --filter @d-red/donor-app dev     # http://localhost:3000
+pnpm --filter @d-red/sync-server dev    # http://localhost:4000
+pnpm --filter @d-red/donor-app dev      # http://localhost:3000
 pnpm --filter @d-red/infrastructure dev # http://localhost:3001
 ```
-
-Ouvrez ensuite 2–3 fenêtres/onglets pour jouer les rôles Donneur, Hôpital et
-CNTS en simultané — c'est le mode de démonstration prévu (voir `CLAUDE.md`,
-section Core Loop).
-
-Un **Mode Autonome** existe aussi : le serveur peut simuler lui-même toutes
-les décisions humaines et enchaîner des demandes en boucle infinie, sans
-aucun acteur réel (utile pour un stand sans présentateur). Panneau caché sur
-`http://localhost:3001/demo` (jamais lié depuis une navigation visible).
 
 ## Vérifications
 
