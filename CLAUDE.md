@@ -3,34 +3,55 @@
 ## Contexte
 
 D.RED (Digital Blood Response & Exchange Directory) coordonne hôpitaux, CNTS
-et donneurs pour réduire le délai d'accès au sang. Ce dépôt est un
-**prototype de démonstration** (hackathons, concours, pitchs partenaires) —
-pas un produit de production. Il doit paraître réaliste sans implémenter une
-architecture de production.
+et donneurs pour réduire le délai d'accès au sang.
 
-Cœur de la démo (Core Loop) : Hôpital crée une urgence → Decision Engine
-(simulé) cherche une poche compatible → si indisponible ou trop lent → CNTS
-mobilise un donneur → notification → acceptation → questionnaire rapide →
-guidage → don validé par QR → résultats d'analyse.
+**Pivot du 2026-07-26 (décision utilisateur explicite, remplace la décision
+précédente conservée en historique ci-dessous) :** le projet passe de
+prototype de démonstration à application de **production réelle**, mobile
+(iOS/Android) + backend **Supabase**. Le monorepo web existant
+(`apps/donor-app`, `apps/infrastructure`, `apps/sync-server`) reste la
+référence fonctionnelle et UX (écrans, vocabulaire, Core Loop) mais n'est
+plus la cible d'architecture finale.
 
-## Ce qu'on ne construit jamais ici
+Cœur du produit (Core Loop, inchangé fonctionnellement) : Hôpital crée une
+urgence → Decision Engine cherche une poche compatible → si indisponible ou
+trop lent → CNTS mobilise un donneur → notification → acceptation →
+questionnaire rapide → guidage → don validé par QR → résultats d'analyse.
 
-Pas de vrai backend applicatif, pas de vraie authentification, pas de vraie
-base de données, pas de vraie API de production, pas de vrais SMS/emails/
-notifications push. Toutes les données et tous les changements d'état sont
-simulés. La seule exception volontaire : `apps/sync-server` (voir ci-dessous)
-est un vrai processus réseau, mais son contenu reste 100% éphémère et simulé.
+## Backend & données (mis à jour 2026-07-26)
 
-**Si une consigne semble demander de réintroduire un vrai backend/DB/auth,
-ne le fais pas silencieusement — signale la contradiction et attends
-confirmation.** Ce point a déjà fait l'objet d'un aller-retour explicite avec
-l'utilisateur ; l'architecture ci-dessous est la décision finale.
+**L'ancienne contrainte "zéro backend réel" (historique ci-dessous) est levée
+par décision utilisateur explicite du 2026-07-26.** Elle avait fait l'objet
+d'un aller-retour explicite et était jusque-là la décision finale ; elle ne
+s'applique plus.
+
+> Historique (jusqu'au 2026-07-26) : pas de vrai backend applicatif, pas de
+> vraie authentification, pas de vraie base de données, pas de vraie API de
+> production, pas de vrais SMS/emails/notifications push — tout simulé, seule
+> exception volontaire `apps/sync-server` (process réseau réel mais état
+> 100% éphémère).
+
+Backend cible : **Supabase** (Postgres géré + auth + realtime).
+
+Schéma posé le 2026-07-26 (état de départ, pas figé — à compléter au fur et
+à mesure des décisions réelles, ne pas deviner au-delà) :
+- Tables : `profiles`, `donors`, `facilities`, `blood_requests`.
+- Enums : `user_role` (`DONOR`, `HOSPITAL`, `CNTS_ADMIN`), `blood_group`,
+  `urgency_status`.
+- Row Level Security (RLS) activée sur toutes les tables (policies non
+  encore documentées ici).
+
+**Toute nouvelle consigne qui semblerait réintroduire une simulation locale
+là où Supabase doit maintenant faire autorité (auth, état des demandes,
+stock) doit être signalée avant d'être appliquée — même logique de prudence
+qu'avant le pivot, juste dans l'autre sens.**
 
 ## Architecture (monorepo pnpm + Turborepo)
 
 ```
 apps/
-  donor-app/         # Next.js App Router, mobile-first (port 3000) — un seul acteur (Donneur)
+  donor-app/         # Next.js App Router, mobile-first (port 3000) — un seul acteur (Donneur), web
+  donor-mobile/      # Expo (React Native, TS) — Donneur mobile, connecté à Supabase (créé 2026-07-26)
   infrastructure/     # Next.js App Router (port 3001) — route groups (actors)/hospital et (actors)/cnts
   sync-server/        # Express + Socket.IO, store en mémoire (port 4000)
 packages/
@@ -84,15 +105,32 @@ simultanée infra+donneurs pour le niveau Critique).
 
 ## Stack technique
 
+**Web (existant — statut à réévaluer après le pivot du 2026-07-26)** :
 Next.js (App Router) / React / TypeScript strict · Tailwind CSS + Shadcn UI +
 Lucide Icons · Zustand · React Hook Form + Zod · carte de navigation MD-11 :
-**vraie carte Leaflet sur tuiles OSM pré-téléchargées et committées**
+vraie carte Leaflet sur tuiles OSM pré-téléchargées et committées
 (`apps/donor-app/public/tiles`, zone Dakar/Thiès, script
-`apps/donor-app/scripts/download-tiles.mjs`) — décision du 2026-07-08
-remplaçant l'illustration SVG simulée, tout en gardant la contrainte
-d'origine : **aucune requête réseau pendant une démo live** (les tuiles sont
-servies localement, jamais depuis tile.openstreetmap.org à l'exécution) ·
-QR code généré côté client, purement visuel.
+`apps/donor-app/scripts/download-tiles.mjs`) · QR code généré côté client,
+purement visuel. La contrainte "aucune requête réseau pendant une démo live"
+était liée au contexte démo/pitch et n'est pas automatiquement pertinente en
+production mobile — ne pas la supposer applicable sans confirmation.
+
+**Mobile** : React Native (Expo, TypeScript), app `@d-red/donor-mobile`
+créée le 2026-07-26 dans `apps/donor-mobile` (template `blank-typescript`,
+pas de navigation lib pour l'instant — un seul écran). Dépendances :
+`@supabase/supabase-js`, `react-native-url-polyfill`,
+`@react-native-async-storage/async-storage` (persistance de session auth).
+Client Supabase dans `apps/donor-mobile/lib/supabase.ts`, lit
+`EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` depuis
+`apps/donor-mobile/.env` (non commité, voir `.env.example`). Écran
+`screens/AuthScreen.tsx` : connexion/inscription email+mot de passe, juste
+pour valider la liaison avec Supabase — pas encore les écrans MD-* réels.
+
+Pas encore tranché : coexistence durable avec `apps/donor-app` web ou
+remplacement à terme, package partagé pour le client Supabase entre apps
+mobile/web (à côté ou à la place de `packages/sync-client`), navigation,
+et comment `apps/donor-mobile` consomme `packages/types`/`packages/ui`. Ne
+pas préjuger de ces choix avant qu'ils soient explicitement décidés.
 
 ## Design system
 

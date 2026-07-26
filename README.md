@@ -1,10 +1,15 @@
-# D.RED — Prototype haute-fidélité
+# D.RED
 
 D.RED (Digital Blood Response & Exchange Directory) coordonne hôpitaux, CNTS
-et donneurs pour réduire le délai d'accès au sang. Ce dépôt est un
-**prototype de démonstration** (hackathons, concours, pitchs partenaires) —
-pas un produit de production. Voir `CLAUDE.md` pour le contexte produit
-complet et les conventions.
+et donneurs pour réduire le délai d'accès au sang.
+
+**Depuis le 2026-07-26, le projet est en transition vers une application de
+production réelle** — mobile (iOS/Android, React Native/Expo) connectée à un
+backend **Supabase** (Postgres + auth + RLS + realtime) — après avoir démarré
+comme prototype de démonstration haute-fidélité (hackathons, concours,
+pitchs partenaires). Le monorepo web ci-dessous reste fonctionnel et sert de
+référence UX/produit pendant la transition. Voir `CLAUDE.md` pour le contexte
+produit complet et les conventions.
 
 ## 🚀 Lancer la démo
 
@@ -32,7 +37,8 @@ fenêtre Donneur dérouler le parcours en boucle.
 
 ```
 apps/
-  donor-app/       Next.js — un seul acteur (Donneur)               port 3000
+  donor-app/       Next.js — un seul acteur (Donneur, web)           port 3000
+  donor-mobile/    Expo (React Native) — Donneur mobile, connecté à Supabase
   infrastructure/  Next.js — acteurs Établissement + CNTS            port 3001
   sync-server/     Express + Socket.IO, état en mémoire              port 4000
 packages/
@@ -45,11 +51,12 @@ packages/
   eslint-config/ config ESLint partagée
 ```
 
-Aucun vrai backend applicatif, aucune vraie base de données, aucune vraie
-authentification — tout est simulé. La seule exception volontaire :
-`apps/sync-server` est un vrai processus réseau (Express + Socket.IO), mais
-son état est 100% en mémoire et éphémère (remis à zéro à chaque redémarrage,
-ou via Mode Démo).
+**Historique (avant le pivot du 2026-07-26)** : aucun vrai backend
+applicatif, aucune vraie base de données, aucune vraie authentification —
+tout était simulé, seule exception volontaire `apps/sync-server` (process
+réseau réel, état 100% en mémoire et éphémère). Cette contrainte ne
+s'applique plus au périmètre production/mobile — voir `CLAUDE.md` (section
+« Backend & données ») pour le schéma Supabase actuel.
 
 ## Prérequis
 
