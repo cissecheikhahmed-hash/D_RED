@@ -19,7 +19,14 @@ export function QrPassModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  donor: { donorId: string; firstName: string; lastName: string; bloodGroup: string };
+  donor: {
+    donorId: string;
+    firstName: string;
+    lastName: string;
+    bloodGroup: string;
+    sex: 'F' | 'M' | null;
+    lastDonationDate: string | null;
+  };
 }) {
   // Régénéré à chaque ouverture : la validité de 5 minutes limite le rejeu
   // d'une capture d'écran du QR code.

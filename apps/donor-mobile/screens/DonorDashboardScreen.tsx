@@ -15,7 +15,6 @@ const colors = {
   white: '#ffffff',
   beige: '#f8efd7',
   dred: '#a50606',
-  dredDark: '#7a0505',
   success: '#1f9d55',
   waiting: '#e8912d',
   border: '#e7e2d6',
@@ -148,11 +147,6 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </View>
       </View>
 
-      <Pressable style={styles.primaryAction}>
-        <Feather name="alert-circle" size={20} color={colors.white} />
-        <Text style={styles.primaryActionText}>Trouver un don d'urgence</Text>
-      </Pressable>
-
       <Pressable style={styles.secondaryAction} onPress={() => setPassVisible(true)}>
         <Feather name="credit-card" size={20} color={colors.dred} />
         <Text style={styles.secondaryActionText}>Mon pass donneur</Text>
@@ -172,10 +166,28 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </View>
       </View>
 
+      <Text style={styles.sectionTitle}>Alertes &amp; Demandes d'urgence reçues</Text>
+      <View style={styles.emptyState}>
+        <View style={styles.emptyStateIconWrap}>
+          <Feather name="bell" size={22} color={colors.inkSoft} />
+        </View>
+        <Text style={styles.emptyStateText}>
+          Aucune alerte d'urgence à proximité pour le moment. Tu recevras une notification si ton
+          groupe sanguin est sollicité.
+        </Text>
+      </View>
+
       <QrPassModal
         visible={passVisible}
         onClose={() => setPassVisible(false)}
-        donor={{ donorId: session.user.id, firstName, lastName, bloodGroup }}
+        donor={{
+          donorId: session.user.id,
+          firstName,
+          lastName,
+          bloodGroup,
+          sex,
+          lastDonationDate: metadata.last_donation_date ?? null,
+        }}
       />
     </ScrollView>
   );
@@ -291,25 +303,6 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginTop: 2,
   },
-  primaryAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.dred,
-    borderRadius: 14,
-    paddingVertical: 16,
-    shadowColor: colors.dredDark,
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  primaryActionText: {
-    color: colors.white,
-    fontWeight: '700',
-    fontSize: 15,
-  },
   secondaryAction: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,5 +350,31 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 13,
     color: colors.inkSoft,
+  },
+  emptyState: {
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: colors.ink,
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
+  },
+  emptyStateIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.beige,
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    lineHeight: 19,
   },
 });

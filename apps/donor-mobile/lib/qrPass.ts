@@ -7,6 +7,8 @@ export type DonorPassPayload = {
   firstName: string;
   lastName: string;
   bloodGroup: string;
+  sex: 'F' | 'M' | null;
+  lastDonationDate: string | null;
   issuedAt: number;
   expiresAt: number;
 };
@@ -24,6 +26,8 @@ export function buildDonorPass(donor: {
   firstName: string;
   lastName: string;
   bloodGroup: string;
+  sex: 'F' | 'M' | null;
+  lastDonationDate: string | null;
 }): string {
   const payload: DonorPassPayload = {
     ...donor,

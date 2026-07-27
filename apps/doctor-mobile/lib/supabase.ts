@@ -6,15 +6,16 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    'EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY doivent être définis dans apps/donor-mobile/.env (voir .env.example).',
+    'EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY doivent être définis dans apps/doctor-mobile/.env (voir .env.example).',
   );
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Volontairement sans persistance : l'utilisateur doit se ré-authentifier
-    // à chaque lancement de l'app plutôt que de retomber automatiquement sur
-    // le dashboard via une session restaurée du stockage local.
+    // Volontairement sans persistance : un poste médical est souvent
+    // partagé entre plusieurs membres du personnel, donc chaque lancement
+    // de l'app doit redemander les identifiants plutôt que de rouvrir la
+    // session de la dernière personne connectée.
     autoRefreshToken: true,
     persistSession: false,
     detectSessionInUrl: false,

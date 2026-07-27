@@ -11,6 +11,7 @@ import {
 import { supabase } from '../lib/supabase';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[0-9 ]{9,15}$/;
 const MIN_PASSWORD_LENGTH = 6;
 const MIN_AGE = 18;
 
@@ -65,6 +66,7 @@ export function AuthScreen() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -107,6 +109,10 @@ export function AuthScreen() {
       setMessage('Merci de renseigner ton prénom et ton nom.');
       return;
     }
+    if (!PHONE_PATTERN.test(phone.trim())) {
+      setMessage('Numéro de téléphone invalide.');
+      return;
+    }
 
     const birthDate = parseDayMonthYear(birthDay, birthMonth, birthYear);
     if (!birthDate) {
@@ -145,6 +151,7 @@ export function AuthScreen() {
         data: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          phone: phone.trim(),
           date_of_birth: birthDate.toISOString().slice(0, 10),
           blood_group: bloodGroup,
           medical_history: medicalHistory.trim() || null,
@@ -197,6 +204,14 @@ export function AuthScreen() {
             onChangeText={setLastName}
           />
         </View>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Téléphone"
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+        />
 
         <TextInput
           style={styles.input}

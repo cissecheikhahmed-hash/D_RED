@@ -52,6 +52,7 @@ qu'avant le pivot, juste dans l'autre sens.**
 apps/
   donor-app/         # Next.js App Router, mobile-first (port 3000) — un seul acteur (Donneur), web
   donor-mobile/      # Expo (React Native, TS) — Donneur mobile, connecté à Supabase (créé 2026-07-26)
+  doctor-mobile/     # Expo (React Native, TS) — Médecin/CNTS mobile, connecté à Supabase (créé 2026-07-27)
   infrastructure/     # Next.js App Router (port 3001) — route groups (actors)/hospital et (actors)/cnts
   sync-server/        # Express + Socket.IO, store en mémoire (port 4000)
 packages/
@@ -115,22 +116,73 @@ purement visuel. La contrainte "aucune requête réseau pendant une démo live"
 était liée au contexte démo/pitch et n'est pas automatiquement pertinente en
 production mobile — ne pas la supposer applicable sans confirmation.
 
-**Mobile** : React Native (Expo, TypeScript), app `@d-red/donor-mobile`
-créée le 2026-07-26 dans `apps/donor-mobile` (template `blank-typescript`,
-pas de navigation lib pour l'instant — un seul écran). Dépendances :
-`@supabase/supabase-js`, `react-native-url-polyfill`,
-`@react-native-async-storage/async-storage` (persistance de session auth).
-Client Supabase dans `apps/donor-mobile/lib/supabase.ts`, lit
-`EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` depuis
-`apps/donor-mobile/.env` (non commité, voir `.env.example`). Écran
-`screens/AuthScreen.tsx` : connexion/inscription email+mot de passe, juste
-pour valider la liaison avec Supabase — pas encore les écrans MD-* réels.
+**Mobile — Donneur** : React Native (Expo, TypeScript), app
+`@d-red/donor-mobile` créée le 2026-07-26 dans `apps/donor-mobile` (template
+`blank-typescript`, pas de navigation lib — écrans commutés par état local).
+Client Supabase dans `lib/supabase.ts` (**`persistSession: false`** — choix
+volontaire du 2026-07-27 : l'utilisateur doit se ré-authentifier à chaque
+lancement, pas de session restaurée automatiquement), lit
+`EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` depuis `.env`
+(non commité, voir `.env.example`). `screens/AuthScreen.tsx` : connexion +
+inscription complète (email/mot de passe, prénom/nom, date de naissance
+18+, groupe sanguin, sexe, date du dernier don), donnée stockée dans
+`user_metadata` Supabase Auth (pas encore dans `profiles`/`donors` réels —
+schéma toujours à confirmer). `screens/DonorDashboardScreen.tsx` :
+éligibilité dynamique (3 mois femmes / 4 mois hommes), géolocalisation
+(`expo-location`), section "Alertes & Demandes d'urgence reçues" (état vide
+pour l'instant), et un pass QR chiffré (`components/QrPassModal.tsx` +
+`lib/qrPass.ts`, AES via `crypto-js`, payload avec expiration 5 min).
 
-Pas encore tranché : coexistence durable avec `apps/donor-app` web ou
-remplacement à terme, package partagé pour le client Supabase entre apps
-mobile/web (à côté ou à la place de `packages/sync-client`), navigation,
-et comment `apps/donor-mobile` consomme `packages/types`/`packages/ui`. Ne
-pas préjuger de ces choix avant qu'ils soient explicitement décidés.
+**Mobile — Médecin/CNTS** : `@d-red/doctor-mobile` créée le 2026-07-27 dans
+`apps/doctor-mobile`, mêmes conventions (Expo blank-typescript, pas de
+persistance de session, `.env` non commité). `screens/AuthScreen.tsx` :
+**connexion uniquement, pas d'auto-inscription** — les comptes
+médecin/hôpital/CNTS ne doivent pas être créés en self-service comme les
+donneurs (accès à des données médicales de tiers). `screens/
+DoctorDashboardScreen.tsx` : deux actions, `components/CreateAlertModal.tsx`
+(formulaire groupe sanguin/poches/rayon, **non persisté dans
+`blood_requests`** — schéma non confirmé) et `components/ScanDonorModal.tsx`
+(caméra `expo-camera`, déchiffre le pass donneur via `lib/qrPass.ts` +
+calcule l'éligibilité via `lib/eligibility.ts`, dupliqué depuis
+`donor-mobile` faute de package partagé). Le bouton "Valider ce don" met à
+jour l'état local uniquement — **impossible en l'état d'écrire la vraie
+date de dernier don du donneur dans Supabase depuis ce client** : les
+champs donneur vivent dans `user_metadata` (modifiable seulement par
+l'utilisateur lui-même via `auth.updateUser`), pas dans une table
+`donors`/`profiles` avec policy RLS d'écriture pour les rôles
+HOSPITAL/CNTS_ADMIN. Nécessite soit ces tables + policies, soit une
+fonction serveur (Edge Function) avec service role.
+
+**Vérification de rôle** : `DoctorDashboardScreen` lit
+`user_metadata.role` (`HOSPITAL`/`CNTS_ADMIN`) et affiche un bandeau
+d'avertissement si absent/différent, mais ne bloque pas l'accès — c'est de
+la UX, pas un contrôle de sécurité réel (contournable côté client). Aucun
+compte n'a de `role` positionné aujourd'hui (le flux d'inscription donneur
+n'en écrit pas), donc ce bandeau s'affichera systématiquement tant que le
+provisioning des comptes médicaux n'est pas défini.
+
+**Compte de démo (2026-07-27)** : `apps/doctor-mobile/scripts/
+create-demo-account.mjs` (`pnpm --filter @d-red/doctor-mobile seed:demo`)
+crée `demo.cnts@d-red.test` avec `role: CNTS_ADMIN` via l'anon key — un
+vrai compte dans le projet Supabase, pas une simulation. L'écran de
+connexion a un bouton "Remplir avec le compte démo" qui pré-remplit ces
+identifiants, visible uniquement en dev (`__DEV__`) : des identifiants en
+dur ne doivent jamais être accessibles dans un build de production.
+
+**Secret partagé `EXPO_PUBLIC_QR_PASS_SECRET`** : doit être identique dans
+`apps/donor-mobile/.env` et `apps/doctor-mobile/.env` pour que le
+déchiffrement fonctionne. Étant `EXPO_PUBLIC_*`, il est embarqué dans les
+deux bundles clients et donc extractible — protège seulement contre un scan
+grand public, pas contre un attaquant qui décompile l'une des deux apps.
+Une vraie confidentialité nécessiterait un chiffrement asymétrique ou une
+fonction serveur détenant le secret.
+
+Pas encore tranché : coexistence durable des apps mobiles avec `apps/
+donor-app`/`apps/infrastructure` web ou remplacement à terme, package
+partagé pour le client Supabase et la logique d'éligibilité entre apps
+mobiles (actuellement dupliquée), et comment ces apps consomment
+`packages/types`/`packages/ui`. Ne pas préjuger de ces choix avant qu'ils
+soient explicitement décidés.
 
 ## Design system
 
