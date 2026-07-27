@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { AuthScreen } from './screens/AuthScreen';
+import { DonorDashboardScreen } from './screens/DonorDashboardScreen';
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -19,7 +20,7 @@ export default function App() {
 
   return (
     <>
-      <AuthScreen session={session} />
+      {session ? <DonorDashboardScreen session={session} /> : <AuthScreen />}
       <StatusBar style="auto" />
     </>
   );
