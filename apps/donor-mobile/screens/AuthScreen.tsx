@@ -8,11 +8,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { isValidPin, pinToPassword } from '../lib/pin';
 import { supabase } from '../lib/supabase';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+?[0-9 ]{9,15}$/;
-const MIN_PASSWORD_LENGTH = 6;
 const MIN_AGE = 18;
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
@@ -24,11 +24,9 @@ const SEXES = [
 ] as const;
 export type Sex = (typeof SEXES)[number]['value'];
 
-function validateEmailAndPassword(email: string, password: string): string | null {
+function validateEmailAndPin(email: string, pin: string): string | null {
   if (!EMAIL_PATTERN.test(email)) return 'Adresse email invalide.';
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
-  }
+  if (!isValidPin(pin)) return 'Le code PIN doit contenir exactement 4 chiffres.';
   return null;
 }
 
@@ -62,7 +60,8 @@ export function AuthScreen() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -85,7 +84,7 @@ export function AuthScreen() {
 
   async function handleSignIn() {
     const cleanEmail = email.trim().toLowerCase();
-    const validationError = validateEmailAndPassword(cleanEmail, password);
+    const validationError = validateEmailAndPin(cleanEmail, pin);
     if (validationError) {
       setMessage(validationError);
       return;
@@ -93,16 +92,23 @@ export function AuthScreen() {
 
     setLoading(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: pinToPassword(pin),
+    });
     if (error) setMessage(error.message);
     setLoading(false);
   }
 
   async function handleSignUp() {
     const cleanEmail = email.trim().toLowerCase();
-    const credentialsError = validateEmailAndPassword(cleanEmail, password);
+    const credentialsError = validateEmailAndPin(cleanEmail, pin);
     if (credentialsError) {
       setMessage(credentialsError);
+      return;
+    }
+    if (pin !== pinConfirm) {
+      setMessage('Les deux codes PIN ne correspondent pas.');
       return;
     }
     if (!firstName.trim() || !lastName.trim()) {
@@ -146,7 +152,7 @@ export function AuthScreen() {
     setMessage(null);
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
-      password,
+      password: pinToPassword(pin),
       options: {
         data: {
           first_name: firstName.trim(),
@@ -221,13 +227,26 @@ export function AuthScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Mot de passe"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.row}>
+          <TextInput
+            style={[styles.input, styles.rowInput]}
+            placeholder="Code PIN (4 chiffres)"
+            secureTextEntry
+            keyboardType="number-pad"
+            maxLength={4}
+            value={pin}
+            onChangeText={setPin}
+          />
+          <TextInput
+            style={[styles.input, styles.rowInput]}
+            placeholder="Confirmer le PIN"
+            secureTextEntry
+            keyboardType="number-pad"
+            maxLength={4}
+            value={pinConfirm}
+            onChangeText={setPinConfirm}
+          />
+        </View>
 
         <Text style={styles.sectionLabel}>Date de naissance</Text>
         <View style={styles.row}>
@@ -360,10 +379,12 @@ export function AuthScreen() {
       />
       <TextInput
         style={styles.input}
-        placeholder="Mot de passe"
+        placeholder="Code PIN (4 chiffres)"
         secureTextEntry
-        value={password}
-        onChangeText={setPassword}
+        keyboardType="number-pad"
+        maxLength={4}
+        value={pin}
+        onChangeText={setPin}
       />
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
