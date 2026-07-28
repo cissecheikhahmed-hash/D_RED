@@ -8,11 +8,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { isValidPin, pinToPassword } from '../lib/pin';
+import { hashPin, isValidPin } from '../lib/pin';
 import { supabase } from '../lib/supabase';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_PATTERN = /^\+?[0-9 ]{9,15}$/;
+const PHONE_PATTERN = /^\+[1-9]\d{7,14}$/;
+const OTP_PATTERN = /^\d{6}$/;
 const MIN_AGE = 18;
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
@@ -24,10 +24,8 @@ const SEXES = [
 ] as const;
 export type Sex = (typeof SEXES)[number]['value'];
 
-function validateEmailAndPin(email: string, pin: string): string | null {
-  if (!EMAIL_PATTERN.test(email)) return 'Adresse email invalide.';
-  if (!isValidPin(pin)) return 'Le code PIN doit contenir exactement 4 chiffres.';
-  return null;
+function normalizePhone(phone: string): string {
+  return phone.trim().replace(/[^\d+]/g, '');
 }
 
 function parseDayMonthYear(day: string, month: string, year: string): Date | null {
@@ -54,18 +52,19 @@ function calculateAge(birthDate: Date): number {
   return age;
 }
 
+type Step = 'form' | 'otp';
+
 export function AuthScreen() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const [email, setEmail] = useState('');
-  const [pin, setPin] = useState('');
-  const [pinConfirm, setPinConfirm] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -76,47 +75,62 @@ export function AuthScreen() {
   const [lastDonationDay, setLastDonationDay] = useState('');
   const [lastDonationMonth, setLastDonationMonth] = useState('');
   const [lastDonationYear, setLastDonationYear] = useState('');
+  const [pin, setPin] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
 
   function switchMode(next: 'signin' | 'signup') {
     setMessage(null);
+    setStep('form');
+    setOtpCode('');
     setMode(next);
   }
 
-  async function handleSignIn() {
-    const cleanEmail = email.trim().toLowerCase();
-    const validationError = validateEmailAndPin(cleanEmail, pin);
-    if (validationError) {
-      setMessage(validationError);
+  async function handleSendOtpSignIn() {
+    const cleanPhone = normalizePhone(phone);
+    if (!PHONE_PATTERN.test(cleanPhone)) {
+      setMessage('Numéro invalide — utilise le format international (ex : +221771234567).');
       return;
     }
 
     setLoading(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: pinToPassword(pin),
+    const { error } = await supabase.auth.signInWithOtp({ phone: cleanPhone });
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setStep('otp');
+    }
+    setLoading(false);
+  }
+
+  async function handleVerifyOtpSignIn() {
+    if (!OTP_PATTERN.test(otpCode)) {
+      setMessage('Le code reçu par SMS contient 6 chiffres.');
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+    const { error } = await supabase.auth.verifyOtp({
+      phone: normalizePhone(phone),
+      token: otpCode,
+      type: 'sms',
     });
+    // Pas d'action manuelle en cas de succès : le listener onAuthStateChange
+    // de App.tsx détecte la nouvelle session et bascule vers le tableau de
+    // bord (ou l'écran de définition du PIN si aucun n'est encore enregistré).
     if (error) setMessage(error.message);
     setLoading(false);
   }
 
-  async function handleSignUp() {
-    const cleanEmail = email.trim().toLowerCase();
-    const credentialsError = validateEmailAndPin(cleanEmail, pin);
-    if (credentialsError) {
-      setMessage(credentialsError);
-      return;
-    }
-    if (pin !== pinConfirm) {
-      setMessage('Les deux codes PIN ne correspondent pas.');
+  async function handleSendOtpSignUp() {
+    const cleanPhone = normalizePhone(phone);
+    if (!PHONE_PATTERN.test(cleanPhone)) {
+      setMessage('Numéro invalide — utilise le format international (ex : +221771234567).');
       return;
     }
     if (!firstName.trim() || !lastName.trim()) {
       setMessage('Merci de renseigner ton prénom et ton nom.');
-      return;
-    }
-    if (!PHONE_PATTERN.test(phone.trim())) {
-      setMessage('Numéro de téléphone invalide.');
       return;
     }
 
@@ -129,7 +143,6 @@ export function AuthScreen() {
       setMessage(`Il faut avoir au moins ${MIN_AGE} ans pour donner son sang.`);
       return;
     }
-
     if (!bloodGroup) {
       setMessage('Merci de sélectionner ton groupe sanguin.');
       return;
@@ -148,47 +161,108 @@ export function AuthScreen() {
       }
     }
 
+    if (!isValidPin(pin)) {
+      setMessage('Le code PIN doit contenir exactement 4 chiffres.');
+      return;
+    }
+    if (pin !== pinConfirm) {
+      setMessage('Les deux codes PIN ne correspondent pas.');
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password: pinToPassword(pin),
-      options: {
-        data: {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          phone: phone.trim(),
-          date_of_birth: birthDate.toISOString().slice(0, 10),
-          blood_group: bloodGroup,
-          medical_history: medicalHistory.trim() || null,
-          sex,
-          last_donation_date: lastDonationDate ? lastDonationDate.toISOString().slice(0, 10) : null,
-        },
-      },
-    });
+    // Le profil n'est volontairement PAS transmis ici via `options.data` :
+    // pour l'inscription par téléphone, ce champ ne s'attache pas de façon
+    // fiable au nouvel utilisateur (contrairement à `signUp` par email). On
+    // le renseigne juste après, via `updateUser`, dans
+    // handleVerifyOtpSignUp — le même mécanisme que celui déjà utilisé (et
+    // vérifié fiable) pour `pin_hash`.
+    const { error } = await supabase.auth.signInWithOtp({ phone: cleanPhone });
 
     if (error) {
       setMessage(error.message);
+    } else {
+      setStep('otp');
+    }
+    setLoading(false);
+  }
+
+  async function handleVerifyOtpSignUp() {
+    if (!OTP_PATTERN.test(otpCode)) {
+      setMessage('Le code reçu par SMS contient 6 chiffres.');
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      phone: normalizePhone(phone),
+      token: otpCode,
+      type: 'sms',
+    });
+    if (verifyError) {
+      setMessage(verifyError.message);
       setLoading(false);
       return;
     }
 
-    // signUp renvoie déjà la session si la confirmation d'email est
-    // désactivée côté Supabase ; on revérifie explicitement au cas où pour
-    // ne jamais laisser l'utilisateur bloqué sur ce formulaire. Dans les
-    // deux cas, c'est le listener onAuthStateChange de App.tsx qui déclenche
-    // la bascule vers le tableau de bord dès qu'une session existe.
-    const activeSession = data.session ?? (await supabase.auth.getSession()).data.session;
+    // Le profil est enregistré ici, une fois la session confirmée — pas via
+    // `options.data` de signInWithOtp (ne s'attache pas de façon fiable pour
+    // l'inscription par téléphone). App.tsx bascule automatiquement vers le
+    // tableau de bord dès que la session (avec ce profil) existe.
+    const birthDate = parseDayMonthYear(birthDay, birthMonth, birthYear);
+    const lastDonationDate = !isFirstDonation
+      ? parseDayMonthYear(lastDonationDay, lastDonationMonth, lastDonationYear)
+      : null;
 
-    if (!activeSession) {
-      // Confirmation d'email requise : pas de session tant qu'elle n'est
-      // pas validée. On repasse en mode connexion (au lieu de laisser le
-      // bouton "Créer mon compte" cliquable) pour éviter l'erreur
-      // "User already registered" si l'utilisateur retente l'inscription.
-      setMessage('Compte créé — confirme ton email avant de te connecter, puis connecte-toi ci-dessous.');
-      setMode('signin');
-    }
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        date_of_birth: birthDate ? birthDate.toISOString().slice(0, 10) : null,
+        blood_group: bloodGroup,
+        medical_history: medicalHistory.trim() || null,
+        sex,
+        last_donation_date: lastDonationDate ? lastDonationDate.toISOString().slice(0, 10) : null,
+        pin_hash: hashPin(pin),
+      },
+    });
+    if (updateError) setMessage(updateError.message);
     setLoading(false);
+  }
+
+  if (step === 'otp') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Vérification du numéro</Text>
+        <Text style={styles.subtitle}>Code envoyé par SMS au {phone}</Text>
+
+        <TextInput
+          style={[styles.input, styles.otpInput]}
+          placeholder="000000"
+          keyboardType="number-pad"
+          maxLength={6}
+          value={otpCode}
+          onChangeText={setOtpCode}
+        />
+
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        <Pressable
+          style={styles.button}
+          onPress={mode === 'signup' ? handleVerifyOtpSignUp : handleVerifyOtpSignIn}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>Valider le code</Text>
+        </Pressable>
+        <Pressable style={styles.buttonSecondary} onPress={() => setStep('form')} disabled={loading}>
+          <Text style={styles.buttonSecondaryText}>Modifier le numéro</Text>
+        </Pressable>
+
+        {loading ? <ActivityIndicator style={styles.spinner} /> : null}
+      </View>
+    );
   }
 
   if (mode === 'signup') {
@@ -213,40 +287,11 @@ export function AuthScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Téléphone"
+          placeholder="Téléphone (ex : +221771234567)"
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
         />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.rowInput]}
-            placeholder="Code PIN (4 chiffres)"
-            secureTextEntry
-            keyboardType="number-pad"
-            maxLength={4}
-            value={pin}
-            onChangeText={setPin}
-          />
-          <TextInput
-            style={[styles.input, styles.rowInput]}
-            placeholder="Confirmer le PIN"
-            secureTextEntry
-            keyboardType="number-pad"
-            maxLength={4}
-            value={pinConfirm}
-            onChangeText={setPinConfirm}
-          />
-        </View>
 
         <Text style={styles.sectionLabel}>Date de naissance</Text>
         <View style={styles.row}>
@@ -305,10 +350,7 @@ export function AuthScreen() {
         </View>
 
         <Text style={styles.sectionLabel}>Dernier don de sang</Text>
-        <Pressable
-          style={styles.checkboxRow}
-          onPress={() => setIsFirstDonation((value) => !value)}
-        >
+        <Pressable style={styles.checkboxRow} onPress={() => setIsFirstDonation((value) => !value)}>
           <View style={[styles.checkbox, isFirstDonation && styles.checkboxChecked]} />
           <Text style={styles.checkboxLabel}>C'est mon premier don</Text>
         </Pressable>
@@ -351,10 +393,34 @@ export function AuthScreen() {
           onChangeText={setMedicalHistory}
         />
 
+        <Text style={styles.sectionLabel}>
+          Code PIN (4 chiffres) — verrou local, ne sert pas à se connecter
+        </Text>
+        <View style={styles.row}>
+          <TextInput
+            style={[styles.input, styles.rowInput]}
+            placeholder="Code PIN"
+            secureTextEntry
+            keyboardType="number-pad"
+            maxLength={4}
+            value={pin}
+            onChangeText={setPin}
+          />
+          <TextInput
+            style={[styles.input, styles.rowInput]}
+            placeholder="Confirmer le PIN"
+            secureTextEntry
+            keyboardType="number-pad"
+            maxLength={4}
+            value={pinConfirm}
+            onChangeText={setPinConfirm}
+          />
+        </View>
+
         {message ? <Text style={styles.message}>{message}</Text> : null}
 
-        <Pressable style={styles.button} onPress={handleSignUp} disabled={loading}>
-          <Text style={styles.buttonText}>Créer mon compte</Text>
+        <Pressable style={styles.button} onPress={handleSendOtpSignUp} disabled={loading}>
+          <Text style={styles.buttonText}>Recevoir le code par SMS</Text>
         </Pressable>
         <Pressable style={styles.buttonSecondary} onPress={() => switchMode('signin')} disabled={loading}>
           <Text style={styles.buttonSecondaryText}>J'ai déjà un compte</Text>
@@ -368,29 +434,20 @@ export function AuthScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>D.RED — Donneur</Text>
+      <Text style={styles.subtitle}>Connexion par code SMS, sans mot de passe.</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Code PIN (4 chiffres)"
-        secureTextEntry
-        keyboardType="number-pad"
-        maxLength={4}
-        value={pin}
-        onChangeText={setPin}
+        placeholder="Téléphone (ex : +221771234567)"
+        keyboardType="phone-pad"
+        value={phone}
+        onChangeText={setPhone}
       />
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      <Pressable style={styles.button} onPress={handleSignIn} disabled={loading}>
-        <Text style={styles.buttonText}>Se connecter</Text>
+      <Pressable style={styles.button} onPress={handleSendOtpSignIn} disabled={loading}>
+        <Text style={styles.buttonText}>Recevoir le code par SMS</Text>
       </Pressable>
       <Pressable style={styles.buttonSecondary} onPress={() => switchMode('signup')} disabled={loading}>
         <Text style={styles.buttonSecondaryText}>Créer un compte</Text>
@@ -421,6 +478,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '600',
     textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#4b4b52',
+    textAlign: 'center',
     marginBottom: 12,
   },
   sectionLabel: {
@@ -447,6 +510,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 24,
+    letterSpacing: 8,
   },
   textArea: {
     minHeight: 72,

@@ -102,7 +102,11 @@ export function DoctorDashboardScreen({ session }: { session: Session }) {
         onClose={() => setEmergencyModalVisible(false)}
         doctorId={session.user.id}
       />
-      <ScanDonorModal visible={scanModalVisible} onClose={() => setScanModalVisible(false)} />
+      <ScanDonorModal
+        visible={scanModalVisible}
+        onClose={() => setScanModalVisible(false)}
+        doctorId={session.user.id}
+      />
     </ScrollView>
   );
 }

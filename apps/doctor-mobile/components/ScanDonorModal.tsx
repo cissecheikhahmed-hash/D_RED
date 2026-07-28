@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { getEligibility } from '../lib/eligibility';
 import { decryptDonorPass, type DonorPassPayload } from '../lib/qrPass';
+import { supabase } from '../lib/supabase';
 
 const colors = {
   ink: '#0b0b0d',
@@ -21,15 +22,43 @@ type ScanState =
   | { step: 'error'; reason: 'invalid' | 'expired' }
   | { step: 'result'; payload: DonorPassPayload };
 
-export function ScanDonorModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function ScanDonorModal({
+  visible,
+  onClose,
+  doctorId,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  doctorId: string;
+}) {
   const [permission, requestPermission] = useCameraPermissions();
   const [state, setState] = useState<ScanState>({ step: 'scanning' });
+  const [validating, setValidating] = useState(false);
   const [validated, setValidated] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   function handleClose() {
     setState({ step: 'scanning' });
     setValidated(false);
+    setValidationError(null);
     onClose();
+  }
+
+  async function handleValidateDonation() {
+    if (state.step !== 'result') return;
+    setValidating(true);
+    setValidationError(null);
+    const { error } = await supabase.from('donations').insert({
+      donor_id: state.payload.donorId,
+      blood_group: state.payload.bloodGroup,
+      validated_by: doctorId,
+    });
+    if (error) {
+      setValidationError(`Erreur Supabase : ${error.message}`);
+    } else {
+      setValidated(true);
+    }
+    setValidating(false);
   }
 
   function handleBarcodeScanned({ data }: { data: string }) {
@@ -135,25 +164,32 @@ export function ScanDonorModal({ visible, onClose }: { visible: boolean; onClose
                 </View>
 
                 <Pressable
-                  style={[styles.button, (!eligible || validated) && styles.buttonDisabled]}
-                  disabled={!eligible || validated}
-                  onPress={() => setValidated(true)}
+                  style={[
+                    styles.button,
+                    (!eligible || validated || validating) && styles.buttonDisabled,
+                  ]}
+                  disabled={!eligible || validated || validating}
+                  onPress={handleValidateDonation}
                 >
                   <Text style={styles.buttonText}>
-                    {validated ? 'Don enregistré (local)' : 'Valider ce don'}
+                    {validated ? 'Don enregistré' : validating ? 'Enregistrement…' : 'Valider ce don'}
                   </Text>
                 </Pressable>
                 {validated && (
                   <Text style={styles.helperSmall}>
-                    Non persisté côté Supabase pour l'instant — voir la note de mise en œuvre.
+                    Enregistré dans Supabase (table `donations`). La date de dernier don du
+                    donneur n'est pas mise à jour automatiquement pour l'instant — voir la note de
+                    mise en œuvre.
                   </Text>
                 )}
+                {validationError && <Text style={styles.message}>{validationError}</Text>}
 
                 <Pressable
                   style={styles.secondaryButton}
                   onPress={() => {
                     setState({ step: 'scanning' });
                     setValidated(false);
+                    setValidationError(null);
                   }}
                 >
                   <Text style={styles.secondaryButtonText}>Scanner un autre pass</Text>
@@ -209,6 +245,11 @@ const styles = StyleSheet.create({
   helperSmall: {
     fontSize: 11,
     color: colors.inkSoft,
+    textAlign: 'center',
+  },
+  message: {
+    fontSize: 12,
+    color: '#B45309',
     textAlign: 'center',
   },
   cameraWrap: {
