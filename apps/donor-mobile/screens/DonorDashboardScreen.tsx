@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { CampaignsSection } from '../components/CampaignsSection';
+import { EmergencyFeedSection } from '../components/EmergencyFeedSection';
 import { PinPromptModal } from '../components/PinPromptModal';
 import { QrPassModal } from '../components/QrPassModal';
 import { supabase } from '../lib/supabase';
@@ -36,8 +37,10 @@ function daysBetween(from: Date, to: Date): number {
 function getEligibility(
   lastDonationDate: Date | null,
   sex: 'F' | 'M' | null,
-): { eligible: boolean; daysRemaining: number; monthsRemaining: number } {
-  if (!lastDonationDate) return { eligible: true, daysRemaining: 0, monthsRemaining: 0 };
+): { eligible: boolean; daysRemaining: number; monthsRemaining: number; eligibleFrom: Date | null } {
+  if (!lastDonationDate) {
+    return { eligible: true, daysRemaining: 0, monthsRemaining: 0, eligibleFrom: null };
+  }
 
   // Le sexe est obligatoire depuis l'inscription ; s'il manque (compte créé
   // avant l'ajout de ce champ), on applique le délai le plus prudent.
@@ -49,7 +52,12 @@ function getEligibility(
     eligible: daysRemaining <= 0,
     daysRemaining,
     monthsRemaining: Math.ceil(daysRemaining / 30),
+    eligibleFrom: daysRemaining > 0 ? eligibleFrom : null,
   };
+}
+
+function formatDateFr(date: Date): string {
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function DonorDashboardScreen({ session }: { session: Session }) {
@@ -68,7 +76,10 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
   const donationsCompleted = lastDonationDate ? 1 : 0;
   const livesImpacted = donationsCompleted * LIVES_PER_DONATION;
 
-  const { eligible, daysRemaining, monthsRemaining } = getEligibility(lastDonationDate, sex);
+  const { eligible, daysRemaining, monthsRemaining, eligibleFrom } = getEligibility(
+    lastDonationDate,
+    sex,
+  );
 
   const [locationDenied, setLocationDenied] = useState(false);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -145,7 +156,7 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
           <Text style={styles.cardSubtitle}>
             {eligible
               ? 'Aucun délai en cours depuis ton dernier don.'
-              : 'Le délai minimum entre deux dons n\'est pas encore écoulé.'}
+              : `Prochain don possible le ${eligibleFrom ? formatDateFr(eligibleFrom) : '—'}.`}
           </Text>
         </View>
       </View>
@@ -169,18 +180,21 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </View>
       </View>
 
-      <CampaignsSection bloodGroup={bloodGroup} coords={coords} />
-
-      <Text style={styles.sectionTitle}>Alertes &amp; Demandes d'urgence reçues</Text>
-      <View style={styles.emptyState}>
-        <View style={styles.emptyStateIconWrap}>
-          <Feather name="bell" size={22} color={colors.inkSoft} />
+      {eligible ? (
+        <>
+          <EmergencyFeedSection donorId={session.user.id} bloodGroup={bloodGroup} coords={coords} />
+          <CampaignsSection bloodGroup={bloodGroup} coords={coords} />
+        </>
+      ) : (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyStateIconWrap}>
+            <Feather name="bell-off" size={22} color={colors.inkSoft} />
+          </View>
+          <Text style={styles.emptyStateText}>
+            Les urgences et campagnes s'affichent une fois que tu es de nouveau éligible au don.
+          </Text>
         </View>
-        <Text style={styles.emptyStateText}>
-          Aucune alerte d'urgence à proximité pour le moment. Tu recevras une notification si ton
-          groupe sanguin est sollicité.
-        </Text>
-      </View>
+      )}
 
       <PinPromptModal
         visible={pinPromptVisible}

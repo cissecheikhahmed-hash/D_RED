@@ -17,6 +17,13 @@ const FIXED_RADIUS_KM = 10;
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 type BloodGroup = (typeof BLOOD_GROUPS)[number];
 
+const DURATION_OPTIONS = [
+  { label: '6 h', hours: 6 },
+  { label: '12 h', hours: 12 },
+  { label: '24 h', hours: 24 },
+  { label: '48 h', hours: 48 },
+] as const;
+
 export function EmergencyAlertModal({
   visible,
   onClose,
@@ -26,15 +33,23 @@ export function EmergencyAlertModal({
   onClose: () => void;
   doctorId: string;
 }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
   const [bloodGroup, setBloodGroup] = useState<BloodGroup | null>(null);
   const [units, setUnits] = useState('');
+  const [durationHours, setDurationHours] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
 
   function reset() {
+    setTitle('');
+    setDescription('');
+    setLocation('');
     setBloodGroup(null);
     setUnits('');
+    setDurationHours(null);
     setMessage(null);
     setCreated(false);
   }
@@ -45,6 +60,10 @@ export function EmergencyAlertModal({
   }
 
   async function handleSubmit() {
+    if (!location.trim()) {
+      setMessage("Indique le lieu/l'adresse de l'urgence.");
+      return;
+    }
     if (!bloodGroup) {
       setMessage('Sélectionne le groupe sanguin requis.');
       return;
@@ -52,6 +71,10 @@ export function EmergencyAlertModal({
     const unitsNumber = Number(units);
     if (!unitsNumber || unitsNumber <= 0) {
       setMessage('Indique un nombre de poches valide.');
+      return;
+    }
+    if (!durationHours) {
+      setMessage("Sélectionne la durée de validité de l'alerte.");
       return;
     }
 
@@ -65,12 +88,19 @@ export function EmergencyAlertModal({
       return;
     }
 
+    const endsAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
+    const defaultTitle = `Besoin urgent de poches ${bloodGroup}`;
+
     const { error } = await supabase.from('emergency_alerts').insert({
+      title: title.trim() || defaultTitle,
+      description: description.trim() || null,
+      location_label: location.trim(),
       blood_group: bloodGroup,
       units_needed: unitsNumber,
       radius_km: FIXED_RADIUS_KM,
       origin_lat: coords.latitude,
       origin_lng: coords.longitude,
+      ends_at: endsAt.toISOString(),
       created_by: doctorId,
     });
 
@@ -113,6 +143,32 @@ export function EmergencyAlertModal({
             </View>
           ) : (
             <>
+              <Text style={styles.sectionLabel}>Titre (optionnel)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex : Besoin urgent de poches O-"
+                value={title}
+                onChangeText={setTitle}
+              />
+
+              <Text style={styles.sectionLabel}>Lieu / adresse</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex : Hôpital Principal de Dakar"
+                value={location}
+                onChangeText={setLocation}
+              />
+
+              <Text style={styles.sectionLabel}>Description (optionnel)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Précisions utiles pour les donneurs…"
+                multiline
+                numberOfLines={2}
+                value={description}
+                onChangeText={setDescription}
+              />
+
               <Text style={styles.sectionLabel}>Groupe sanguin requis</Text>
               <View style={styles.chipRow}>
                 {BLOOD_GROUPS.map((group) => (
@@ -136,6 +192,23 @@ export function EmergencyAlertModal({
                 value={units}
                 onChangeText={setUnits}
               />
+
+              <Text style={styles.sectionLabel}>Validité de l'alerte</Text>
+              <View style={styles.chipRow}>
+                {DURATION_OPTIONS.map(({ label, hours }) => (
+                  <Pressable
+                    key={hours}
+                    style={[styles.chip, durationHours === hours && styles.chipSelected]}
+                    onPress={() => setDurationHours(hours)}
+                  >
+                    <Text
+                      style={[styles.chipText, durationHours === hours && styles.chipTextSelected]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
               <View style={styles.radiusNote}>
                 <Feather name="map-pin" size={14} color={colors.inkSoft} />
@@ -223,6 +296,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  textArea: {
+    minHeight: 56,
+    textAlignVertical: 'top',
   },
   radiusNote: {
     flexDirection: 'row',

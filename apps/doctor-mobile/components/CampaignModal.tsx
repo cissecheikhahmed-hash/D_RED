@@ -39,11 +39,15 @@ export function CampaignModal({
   doctorId: string;
 }) {
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [allGroups, setAllGroups] = useState(true);
   const [selectedGroups, setSelectedGroups] = useState<BloodGroup[]>([]);
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
+  const [endDay, setEndDay] = useState('');
+  const [endMonth, setEndMonth] = useState('');
+  const [endYear, setEndYear] = useState('');
   const [location, setLocation] = useState('');
   const [radiusKm, setRadiusKm] = useState<(typeof RADIUS_OPTIONS)[number] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,11 +62,15 @@ export function CampaignModal({
 
   function reset() {
     setTitle('');
+    setDescription('');
     setAllGroups(true);
     setSelectedGroups([]);
     setDay('');
     setMonth('');
     setYear('');
+    setEndDay('');
+    setEndMonth('');
+    setEndYear('');
     setLocation('');
     setRadiusKm(null);
     setMessage(null);
@@ -88,6 +96,15 @@ export function CampaignModal({
       setMessage('Date invalide (format JJ/MM/AAAA).');
       return;
     }
+    const endDate = parseDayMonthYear(endDay, endMonth, endYear);
+    if (!endDate) {
+      setMessage('Date de fin invalide (format JJ/MM/AAAA).');
+      return;
+    }
+    if (endDate < scheduledDate) {
+      setMessage('La date de fin doit être après la date de la campagne.');
+      return;
+    }
     if (!location.trim()) {
       setMessage('Indique le lieu de la campagne.');
       return;
@@ -109,8 +126,10 @@ export function CampaignModal({
 
     const { error } = await supabase.from('campaigns').insert({
       title: title.trim(),
+      description: description.trim() || null,
       blood_groups: allGroups ? null : selectedGroups,
       scheduled_at: scheduledDate.toISOString(),
+      ends_at: endDate.toISOString(),
       location_label: location.trim(),
       origin_lat: coords.latitude,
       origin_lng: coords.longitude,
@@ -164,6 +183,16 @@ export function CampaignModal({
                 onChangeText={setTitle}
               />
 
+              <Text style={styles.sectionLabel}>Description (optionnel)</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Précisions utiles pour les donneurs…"
+                multiline
+                numberOfLines={3}
+                value={description}
+                onChangeText={setDescription}
+              />
+
               <Text style={styles.sectionLabel}>Groupes sanguins ciblés</Text>
               <Pressable style={styles.checkboxRow} onPress={() => setAllGroups((v) => !v)}>
                 <View style={[styles.checkbox, allGroups && styles.checkboxChecked]} />
@@ -215,6 +244,34 @@ export function CampaignModal({
                   maxLength={4}
                   value={year}
                   onChangeText={setYear}
+                />
+              </View>
+
+              <Text style={styles.sectionLabel}>Date de fin</Text>
+              <View style={styles.row}>
+                <TextInput
+                  style={[styles.input, styles.dateInput]}
+                  placeholder="JJ"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={endDay}
+                  onChangeText={setEndDay}
+                />
+                <TextInput
+                  style={[styles.input, styles.dateInput]}
+                  placeholder="MM"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={endMonth}
+                  onChangeText={setEndMonth}
+                />
+                <TextInput
+                  style={[styles.input, styles.dateInput, styles.yearInput]}
+                  placeholder="AAAA"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  value={endYear}
+                  onChangeText={setEndYear}
                 />
               </View>
 
@@ -311,6 +368,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  textArea: {
+    minHeight: 64,
+    textAlignVertical: 'top',
   },
   checkboxRow: {
     flexDirection: 'row',

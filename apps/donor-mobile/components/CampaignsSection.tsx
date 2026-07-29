@@ -44,15 +44,16 @@ export function CampaignsSection({
 
   useEffect(() => {
     (async () => {
+      const nowIso = new Date().toISOString();
       const { data, error: fetchError } = await supabase
         .from('campaigns')
         .select('id, title, blood_groups, scheduled_at, location_label, origin_lat, origin_lng, radius_km')
-        .gte('scheduled_at', new Date().toISOString())
+        .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
         .order('scheduled_at', { ascending: true });
 
       if (fetchError) {
-        // Attendu tant que supabase/migrations/20260727_campaigns_and_emergency_alerts.sql
-        // n'a pas été exécutée sur ce projet.
+        // Attendu tant que les migrations campaigns_and_emergency_alerts /
+        // campaigns_emergency_v2 n'ont pas été exécutées sur ce projet.
         setError(fetchError.message);
         return;
       }
@@ -60,14 +61,17 @@ export function CampaignsSection({
     })();
   }, []);
 
-  const sortedCampaigns = campaigns
-    ? [...campaigns].sort((a, b) => {
-        if (!coords) return 0;
-        const distA = distanceKm(coords, { latitude: a.origin_lat, longitude: a.origin_lng });
-        const distB = distanceKm(coords, { latitude: b.origin_lat, longitude: b.origin_lng });
-        return distA - distB;
-      })
-    : [];
+  const sortedCampaigns = (campaigns ?? [])
+    .filter((campaign) => {
+      if (!coords) return true;
+      return distanceKm(coords, { latitude: campaign.origin_lat, longitude: campaign.origin_lng }) <= campaign.radius_km;
+    })
+    .sort((a, b) => {
+      if (!coords) return 0;
+      const distA = distanceKm(coords, { latitude: a.origin_lat, longitude: a.origin_lng });
+      const distB = distanceKm(coords, { latitude: b.origin_lat, longitude: b.origin_lng });
+      return distA - distB;
+    });
 
   return (
     <>
@@ -88,13 +92,13 @@ export function CampaignsSection({
         </View>
       )}
 
-      {!error && campaigns !== null && campaigns.length === 0 && (
+      {!error && campaigns !== null && sortedCampaigns.length === 0 && (
         <View style={styles.emptyState}>
           <View style={styles.emptyStateIconWrap}>
             <Feather name="calendar" size={22} color={colors.inkSoft} />
           </View>
           <Text style={styles.emptyStateText}>
-            Aucune campagne programmée pour le moment. Reviens plus tard !
+            Aucune campagne à proximité pour le moment. Reviens plus tard !
           </Text>
         </View>
       )}
@@ -113,7 +117,7 @@ export function CampaignsSection({
                 {targetsMyGroup && (
                   <View style={styles.matchBadge}>
                     <Feather name="droplet" size={12} color={colors.white} />
-                    <Text style={styles.matchBadgeText}>Ton groupe</Text>
+                    <Text style={styles.matchBadgeText}>Compatible avec ton groupe</Text>
                   </View>
                 )}
               </View>
