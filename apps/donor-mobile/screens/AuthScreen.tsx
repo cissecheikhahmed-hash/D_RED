@@ -52,7 +52,7 @@ function calculateAge(birthDate: Date): number {
   return age;
 }
 
-type Step = 'form' | 'otp';
+type Step = 'form' | 'pin' | 'otp';
 
 export function AuthScreen() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -61,6 +61,7 @@ export function AuthScreen() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [phone, setPhone] = useState('');
+  const [signInPin, setSignInPin] = useState('');
   const [otpCode, setOtpCode] = useState('');
 
   const [firstName, setFirstName] = useState('');
@@ -81,20 +82,55 @@ export function AuthScreen() {
   function switchMode(next: 'signin' | 'signup') {
     setMessage(null);
     setStep('form');
+    setSignInPin('');
     setOtpCode('');
     setMode(next);
   }
 
-  async function handleSendOtpSignIn() {
+  function handleContinueSignIn() {
     const cleanPhone = normalizePhone(phone);
     if (!PHONE_PATTERN.test(cleanPhone)) {
       setMessage('Numéro invalide — utilise le format international (ex : +221771234567).');
       return;
     }
+    setMessage(null);
+    setStep('pin');
+  }
+
+  async function handleVerifyPinAndSendOtp() {
+    if (!isValidPin(signInPin)) {
+      setMessage('Le code PIN doit contenir exactement 4 chiffres.');
+      return;
+    }
 
     setLoading(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({ phone: cleanPhone });
+    const cleanPhone = normalizePhone(phone);
+
+    // Le PIN est vérifié côté serveur AVANT d'envoyer le moindre SMS — sans
+    // ça, n'importe qui pourrait harceler le numéro de quelqu'un d'autre en
+    // le tapant sur cet écran. Message volontairement générique dans tous
+    // les cas d'échec (numéro inconnu ou mauvais PIN), pour ne pas révéler
+    // quels numéros ont un compte.
+    const { data: pinOk, error: pinError } = await supabase.rpc('verify_signin_pin', {
+      p_phone: cleanPhone,
+      p_pin_hash: hashPin(signInPin),
+    });
+
+    if (pinError || !pinOk) {
+      setMessage('Numéro ou code PIN incorrect.');
+      setLoading(false);
+      return;
+    }
+
+    // shouldCreateUser: false — sans ça, Supabase crée silencieusement un
+    // compte vide (sans aucun profil) pour n'importe quel numéro inconnu
+    // saisi ici par erreur, au lieu d'inviter à s'inscrire. C'est
+    // exactement ce qui a produit des comptes avec un profil vide.
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: cleanPhone,
+      options: { shouldCreateUser: false },
+    });
     if (error) {
       setMessage(error.message);
     } else {
@@ -232,6 +268,46 @@ export function AuthScreen() {
     setLoading(false);
   }
 
+  if (step === 'pin') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Code PIN</Text>
+        <Text style={styles.subtitle}>
+          Confirme ton code PIN avant l'envoi du SMS — ça évite qu'on puisse t'envoyer des SMS en
+          tapant juste ton numéro.
+        </Text>
+
+        <TextInput
+          style={[styles.input, styles.otpInput]}
+          placeholder="0000"
+          secureTextEntry
+          keyboardType="number-pad"
+          maxLength={4}
+          value={signInPin}
+          onChangeText={setSignInPin}
+        />
+
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        <Pressable style={styles.button} onPress={handleVerifyPinAndSendOtp} disabled={loading}>
+          <Text style={styles.buttonText}>Recevoir le code par SMS</Text>
+        </Pressable>
+        <Pressable
+          style={styles.buttonSecondary}
+          onPress={() => {
+            setMessage(null);
+            setStep('form');
+          }}
+          disabled={loading}
+        >
+          <Text style={styles.buttonSecondaryText}>Modifier le numéro</Text>
+        </Pressable>
+
+        {loading ? <ActivityIndicator style={styles.spinner} /> : null}
+      </View>
+    );
+  }
+
   if (step === 'otp') {
     return (
       <View style={styles.container}>
@@ -256,8 +332,17 @@ export function AuthScreen() {
         >
           <Text style={styles.buttonText}>Valider le code</Text>
         </Pressable>
-        <Pressable style={styles.buttonSecondary} onPress={() => setStep('form')} disabled={loading}>
-          <Text style={styles.buttonSecondaryText}>Modifier le numéro</Text>
+        <Pressable
+          style={styles.buttonSecondary}
+          onPress={() => {
+            setMessage(null);
+            setStep(mode === 'signin' ? 'pin' : 'form');
+          }}
+          disabled={loading}
+        >
+          <Text style={styles.buttonSecondaryText}>
+            {mode === 'signin' ? 'Modifier le PIN' : 'Modifier le numéro'}
+          </Text>
         </Pressable>
 
         {loading ? <ActivityIndicator style={styles.spinner} /> : null}
@@ -446,8 +531,8 @@ export function AuthScreen() {
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      <Pressable style={styles.button} onPress={handleSendOtpSignIn} disabled={loading}>
-        <Text style={styles.buttonText}>Recevoir le code par SMS</Text>
+      <Pressable style={styles.button} onPress={handleContinueSignIn} disabled={loading}>
+        <Text style={styles.buttonText}>Continuer</Text>
       </Pressable>
       <Pressable style={styles.buttonSecondary} onPress={() => switchMode('signup')} disabled={loading}>
         <Text style={styles.buttonSecondaryText}>Créer un compte</Text>

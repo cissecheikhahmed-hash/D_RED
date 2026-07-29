@@ -17,20 +17,18 @@ const colors = {
   border: '#e7e2d6',
 };
 
+const VALID_BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+function hasValidBloodGroup(payload: DonorPassPayload): boolean {
+  return VALID_BLOOD_GROUPS.includes(payload.bloodGroup);
+}
+
 type ScanState =
   | { step: 'scanning' }
   | { step: 'error'; reason: 'invalid' | 'expired' }
   | { step: 'result'; payload: DonorPassPayload };
 
-export function ScanDonorModal({
-  visible,
-  onClose,
-  doctorId,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  doctorId: string;
-}) {
+export function ScanDonorModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [state, setState] = useState<ScanState>({ step: 'scanning' });
   const [validating, setValidating] = useState(false);
@@ -46,12 +44,25 @@ export function ScanDonorModal({
 
   async function handleValidateDonation() {
     if (state.step !== 'result') return;
+    if (!hasValidBloodGroup(state.payload)) {
+      // Ne jamais substituer un groupe sanguin par défaut : une valeur
+      // inventée serait dangereuse dans le cadre d'un don de sang. On
+      // bloque l'enregistrement et on explique pourquoi.
+      setValidationError(
+        "Groupe sanguin manquant ou invalide sur ce pass — impossible d'enregistrer le don. Demande au donneur de vérifier son profil (groupe sanguin) avant de réessayer.",
+      );
+      return;
+    }
+
     setValidating(true);
     setValidationError(null);
-    const { error } = await supabase.from('donations').insert({
-      donor_id: state.payload.donorId,
-      blood_group: state.payload.bloodGroup,
-      validated_by: doctorId,
+    // RPC (SECURITY DEFINER) plutôt qu'un insert direct : elle enregistre le
+    // don ET met à jour last_donation_date du donneur en une seule
+    // transaction — un insert client seul ne peut pas faire cette deuxième
+    // partie (écriture dans le compte d'un autre utilisateur).
+    const { error } = await supabase.rpc('validate_donation', {
+      p_donor_id: state.payload.donorId,
+      p_blood_group: state.payload.bloodGroup,
     });
     if (error) {
       setValidationError(`Erreur Supabase : ${error.message}`);
@@ -133,17 +144,30 @@ export function ScanDonorModal({
               lastDonationDate,
               state.payload.sex,
             );
+            const bloodGroupValid = hasValidBloodGroup(state.payload);
+            const hasName = state.payload.firstName.trim() || state.payload.lastName.trim();
 
             return (
               <View style={styles.resultWrap}>
                 <View style={styles.donorCard}>
                   <Text style={styles.donorName}>
-                    {state.payload.firstName} {state.payload.lastName}
+                    {hasName
+                      ? `${state.payload.firstName} ${state.payload.lastName}`
+                      : 'Nom non renseigné sur ce pass'}
                   </Text>
-                  <View style={styles.bloodBadge}>
-                    <Feather name="droplet" size={14} color={colors.white} />
-                    <Text style={styles.bloodBadgeText}>{state.payload.bloodGroup}</Text>
-                  </View>
+                  {bloodGroupValid ? (
+                    <View style={styles.bloodBadge}>
+                      <Feather name="droplet" size={14} color={colors.white} />
+                      <Text style={styles.bloodBadgeText}>{state.payload.bloodGroup}</Text>
+                    </View>
+                  ) : (
+                    <View style={[styles.bloodBadge, styles.bloodBadgeMissing]}>
+                      <Feather name="alert-triangle" size={14} color={colors.waiting} />
+                      <Text style={[styles.bloodBadgeText, styles.bloodBadgeMissingText]}>
+                        Groupe sanguin manquant
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View
@@ -166,9 +190,10 @@ export function ScanDonorModal({
                 <Pressable
                   style={[
                     styles.button,
-                    (!eligible || validated || validating) && styles.buttonDisabled,
+                    (!eligible || !bloodGroupValid || validated || validating) &&
+                      styles.buttonDisabled,
                   ]}
-                  disabled={!eligible || validated || validating}
+                  disabled={!eligible || !bloodGroupValid || validated || validating}
                   onPress={handleValidateDonation}
                 >
                   <Text style={styles.buttonText}>
@@ -318,6 +343,12 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '700',
     fontSize: 13,
+  },
+  bloodBadgeMissing: {
+    backgroundColor: '#FEF3E2',
+  },
+  bloodBadgeMissingText: {
+    color: colors.waiting,
   },
   eligibilityCard: {
     flexDirection: 'row',

@@ -3,6 +3,8 @@ import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+import { CampaignsSection } from '../components/CampaignsSection';
+import { PinPromptModal } from '../components/PinPromptModal';
 import { QrPassModal } from '../components/QrPassModal';
 import { supabase } from '../lib/supabase';
 
@@ -71,6 +73,7 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
   const [locationDenied, setLocationDenied] = useState(false);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [passVisible, setPassVisible] = useState(false);
+  const [pinPromptVisible, setPinPromptVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -147,7 +150,7 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </View>
       </View>
 
-      <Pressable style={styles.secondaryAction} onPress={() => setPassVisible(true)}>
+      <Pressable style={styles.secondaryAction} onPress={() => setPinPromptVisible(true)}>
         <Feather name="credit-card" size={20} color={colors.dred} />
         <Text style={styles.secondaryActionText}>Mon pass donneur</Text>
       </Pressable>
@@ -166,6 +169,8 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </View>
       </View>
 
+      <CampaignsSection bloodGroup={bloodGroup} coords={coords} />
+
       <Text style={styles.sectionTitle}>Alertes &amp; Demandes d'urgence reçues</Text>
       <View style={styles.emptyState}>
         <View style={styles.emptyStateIconWrap}>
@@ -177,6 +182,15 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
         </Text>
       </View>
 
+      <PinPromptModal
+        visible={pinPromptVisible}
+        storedPinHash={metadata.pin_hash ?? null}
+        onCancel={() => setPinPromptVisible(false)}
+        onSuccess={() => {
+          setPinPromptVisible(false);
+          setPassVisible(true);
+        }}
+      />
       <QrPassModal
         visible={passVisible}
         onClose={() => setPassVisible(false)}
