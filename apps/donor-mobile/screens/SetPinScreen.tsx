@@ -19,7 +19,7 @@ export function SetPinScreen() {
       setMessage('Le code PIN doit contenir exactement 4 chiffres.');
       return;
     }
-    if (pin !== pinConfirm) {
+    if (pin.trim() !== pinConfirm.trim()) {
       setMessage('Les deux codes PIN ne correspondent pas.');
       return;
     }

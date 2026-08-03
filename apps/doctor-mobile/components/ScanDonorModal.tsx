@@ -202,9 +202,8 @@ export function ScanDonorModal({ visible, onClose }: { visible: boolean; onClose
                 </Pressable>
                 {validated && (
                   <Text style={styles.helperSmall}>
-                    Enregistré dans Supabase (table `donations`). La date de dernier don du
-                    donneur n'est pas mise à jour automatiquement pour l'instant — voir la note de
-                    mise en œuvre.
+                    Enregistré dans Supabase (table `donations`) — la date de dernier don du
+                    donneur est mise à jour automatiquement (RPC `validate_donation`).
                   </Text>
                 )}
                 {validationError && <Text style={styles.message}>{validationError}</Text>}

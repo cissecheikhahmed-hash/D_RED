@@ -1,0 +1,14 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "pnpm": "9.15.9",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

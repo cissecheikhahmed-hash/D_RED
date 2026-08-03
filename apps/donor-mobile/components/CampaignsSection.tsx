@@ -42,36 +42,53 @@ export function CampaignsSection({
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const nowIso = new Date().toISOString();
-      const { data, error: fetchError } = await supabase
-        .from('campaigns')
-        .select('id, title, blood_groups, scheduled_at, location_label, origin_lat, origin_lng, radius_km')
-        .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
-        .order('scheduled_at', { ascending: true });
+  async function fetchCampaigns() {
+    const nowIso = new Date().toISOString();
+    const { data, error: fetchError } = await supabase
+      .from('campaigns')
+      .select('id, title, blood_groups, scheduled_at, location_label, origin_lat, origin_lng, radius_km')
+      .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+      .order('scheduled_at', { ascending: true });
 
-      if (fetchError) {
-        // Attendu tant que les migrations campaigns_and_emergency_alerts /
-        // campaigns_emergency_v2 n'ont pas été exécutées sur ce projet.
-        setError(fetchError.message);
-        return;
-      }
-      setCampaigns(data ?? []);
-    })();
+    if (fetchError) {
+      // Attendu tant que les migrations campaigns_and_emergency_alerts /
+      // campaigns_emergency_v2 n'ont pas été exécutées sur ce projet.
+      setError(fetchError.message);
+      return;
+    }
+    setCampaigns(data ?? []);
+  }
+
+  useEffect(() => {
+    fetchCampaigns();
+
+    // Realtime : sans ceci, une campagne créée par le médecin n'apparaît
+    // qu'au prochain remontage de cet écran côté donneur (bug remonté) —
+    // même mécanique que le flux d'urgences (EmergencyFeedSection).
+    const channel = supabase
+      .channel('campaigns_feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'campaigns' }, () =>
+        fetchCampaigns(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const sortedCampaigns = (campaigns ?? [])
-    .filter((campaign) => {
-      if (!coords) return true;
-      return distanceKm(coords, { latitude: campaign.origin_lat, longitude: campaign.origin_lng }) <= campaign.radius_km;
-    })
-    .sort((a, b) => {
-      if (!coords) return 0;
-      const distA = distanceKm(coords, { latitude: a.origin_lat, longitude: a.origin_lng });
-      const distB = distanceKm(coords, { latitude: b.origin_lat, longitude: b.origin_lng });
-      return distA - distB;
-    });
+  // Volontairement AUCUN filtre sur le rayon ici : `radius_km` sert
+  // uniquement à trier/afficher côté donneur, jamais à masquer une
+  // campagne active. Un filtrage strict avait pour effet de cacher
+  // silencieusement toute campagne créée hors d'un rayon de test réaliste
+  // (même classe de bug déjà écartée pour les urgences, voir
+  // EmergencyFeedSection).
+  const sortedCampaigns = (campaigns ?? []).slice().sort((a, b) => {
+    if (!coords) return 0;
+    const distA = distanceKm(coords, { latitude: a.origin_lat, longitude: a.origin_lng });
+    const distB = distanceKm(coords, { latitude: b.origin_lat, longitude: b.origin_lng });
+    return distA - distB;
+  });
 
   return (
     <>

@@ -119,6 +119,22 @@ production mobile — ne pas la supposer applicable sans confirmation.
 **Mobile — Donneur** : React Native (Expo, TypeScript), app
 `@d-red/donor-mobile` créée le 2026-07-26 dans `apps/donor-mobile` (template
 `blank-typescript`, pas de navigation lib — écrans commutés par état local).
+**Bug corrigé (2026-07-30) : PIN toujours refusé à la connexion.** La vraie
+cause n'était ni le hachage (`lib/pin.ts` → `hashPin`/`isValidPin`, déjà
+partagé et donc symétrique par construction entre inscription et
+connexion) ni le type de colonne (le PIN est stocké haché dans
+`auth.users.raw_user_meta_data.pin_hash`, JSONB — il n'y a pas de table
+`profiles`/colonne `pin` dans ce projet) : `verify_signin_pin`
+(migration 20260729) comparait `auth.users.phone` à `p_phone` par égalité
+stricte, alors que GoTrue stocke `phone` **sans** le `+` initial que le
+client envoie toujours (`normalizePhone`). La ligne n'était donc jamais
+trouvée → `pin_hash` toujours `null` → PIN toujours refusé, quel que soit
+le code saisi. Corrigé (migration `20260730_fix_pin_phone_matching.sql`)
+en comparant uniquement les chiffres des deux côtés
+(`regexp_replace(phone, '\D', '', 'g')`), insensible au `+`/espaces/tirets.
+`lib/pin.ts` trime aussi désormais en interne (`hashPin`/`isValidPin`), une
+seule fois, plutôt que dans chaque écran appelant.
+
 Client Supabase dans `lib/supabase.ts` (**`persistSession: false`** — choix
 volontaire du 2026-07-27 : l'utilisateur doit se ré-authentifier à chaque
 lancement, pas de session restaurée automatiquement), lit
@@ -131,7 +147,42 @@ schéma toujours à confirmer). `screens/DonorDashboardScreen.tsx` :
 éligibilité dynamique (3 mois femmes / 4 mois hommes), géolocalisation
 (`expo-location`), section "Alertes & Demandes d'urgence reçues" (état vide
 pour l'instant), et un pass QR chiffré (`components/QrPassModal.tsx` +
-`lib/qrPass.ts`, AES via `crypto-js`, payload avec expiration 5 min).
+`lib/qrPass.ts`, AES via `crypto-js`, payload avec expiration 5 min). Le
+compteur "Mon impact" (dons effectués / vies impactées) lit désormais le
+vrai historique (`select count(*) from donations where donor_id = ...`,
+RLS : le donneur ne lit que ses propres lignes) au lieu de l'ancien calcul
+0/1 basé sur `last_donation_date` — table ajoutée à la publication
+`supabase_realtime` (migration `20260730_donations_realtime.sql`) pour que
+`components/DonationCelebrationModal.tsx` s'affiche automatiquement dès
+que le médecin valide le don (RPC `validate_donation`, `ScanDonorModal`
+côté doctor-mobile) : cœur battant + confettis (animations RN natives,
+zéro dépendance ajoutée), message d'impact, compteurs à jour, bouton
+"Partager mon impact" (`Share` natif de `react-native`). Comme pour les
+autres flux, refetch complet du compte sur l'événement Realtime plutôt
+qu'incrément local, pour rester source de vérité même en cas d'événement
+manqué (donneur hors ligne au moment de la validation).
+`components/CampaignsSection.tsx` et `components/EmergencyFeedSection.tsx`
+sont maintenant toutes les deux branchées en Realtime Supabase
+(`postgres_changes` sur `campaigns`/`emergency_alerts`) — une nouvelle
+campagne/alerte apparaît sans remonter l'écran (`campaigns` ajoutée à la
+publication `supabase_realtime`, voir migration
+`20260730_doctor_dashboard_realtime.sql`). Le vrai bug "les campagnes ne
+s'affichent pas" était en fait un filtrage client sur `radius_km` qui
+masquait silencieusement toute campagne hors rayon test réaliste (corrigé
+le 2026-07-30, `CampaignsSection.tsx`) : **le rayon (`radius_km`,
+`campaigns` comme `emergency_alerts`) ne doit jamais servir à masquer une
+ligne, seulement à trier/afficher** — même règle des deux côtés. Le groupe
+sanguin suit une règle différente selon le flux : côté `campaigns`, badge
+informatif seulement (jamais masqué) ; côté `emergency_alerts`, **filtre
+strict** (une urgence dont aucun `blood_groups` ne correspond au groupe du
+donneur est entièrement masquée — décision explicite du 2026-07-30, qui
+remplace un choix antérieur de "badge seulement"). Quand un donneur accepte une
+urgence (`components/EmergencyMissionModal.tsx`, "J'accepte la mission"),
+l'insert dans `emergency_responses` dénormalise aussi un instantané du
+donneur (prénom, nom, groupe sanguin, `session.user.phone`, position) —
+nécessaire car le client médecin (clé anon) ne peut pas lire `auth.users`
+d'un autre utilisateur ; pas de table `profiles`/`donors` lisible côté
+médecin à ce jour.
 
 **Mobile — Médecin/CNTS** : `@d-red/doctor-mobile` créée le 2026-07-27 dans
 `apps/doctor-mobile`, mêmes conventions (Expo blank-typescript, pas de
@@ -160,6 +211,45 @@ la UX, pas un contrôle de sécurité réel (contournable côté client). Aucun
 compte n'a de `role` positionné aujourd'hui (le flux d'inscription donneur
 n'en écrit pas), donc ce bandeau s'affichera systématiquement tant que le
 provisioning des comptes médicaux n'est pas défini.
+
+**Fiche établissement (2026-07-30)** : le médecin ne saisit plus jamais le
+nom/l'adresse de son hôpital dans `CampaignModal.tsx`/`EmergencyAlertModal.tsx`
+(champ retiré, ainsi que `lib/location.ts`/`getCurrentCoords` — supprimé,
+plus aucun appel GPS côté médecin pour ces formulaires). À la place,
+`lib/hospital.ts` (`getHospitalProfile`) lit `hospital_name` /
+`hospital_address` / `hospital_lat` / `hospital_lng` depuis
+`user_metadata` — même mécanisme que `role`, pas de table
+`hospitals`/`profiles`. Ces champs sont pré-configurés par le CNTS à la
+création du compte (`scripts/create-demo-account.mjs` les fixe/rétablit,
+y compris sur un compte démo déjà existant via sign-in + `updateUser`) ;
+il n'existe pas encore d'écran d'administration CNTS pour les gérer sur de
+vrais comptes. Si absents, `DoctorDashboardScreen` affiche un bandeau
+d'avertissement et désactive les deux actions de création (campagne /
+urgence) plutôt que de les laisser échouer silencieusement à la
+soumission. `CampaignModal.tsx` collecte désormais une heure de début et
+une heure de fin (en plus des dates déjà présentes), fusionnées dans
+`scheduled_at`/`ends_at` — auparavant calées à minuit.
+
+**Tableau de bord temps réel du médecin (2026-07-30)** :
+`components/EmergencyResponsesPanel.tsx` (dans `DoctorDashboardScreen`,
+section "Missions en cours") liste les alertes `OPEN` créées par le
+médecin connecté et leurs réponses (`emergency_responses`), avec
+réabonnement Realtime (`postgres_changes` sur `emergency_responses` et
+`emergency_alerts`, sans filtre serveur — même choix volontaire que
+`EmergencyFeedSection` côté donneur) : dès qu'un donneur accepte, sa
+fiche (nom, groupe, distance calculée via `lib/distance.ts` dupliqué
+depuis donor-mobile) apparaît sans action du médecin. Bouton "Appeler le
+donneur" : `Linking.openURL('tel:...')` sur `donor_phone` dénormalisé.
+Bouton "Alerte satisfaite — prévenir les autres donneurs" : passe
+`emergency_alerts.status` à `CLOSED` (nouvelle policy UPDATE réservée au
+créateur, migration `20260730_doctor_dashboard_realtime.sql`) — c'est ce
+qui retire réellement l'alerte de l'écran des autres donneurs en temps
+réel (filtre `status = 'OPEN'` + Realtime déjà en place côté
+`EmergencyFeedSection`). Le bouton met aussi en file des lignes
+`sms_notifications` pour les répondants (nouvelle policy INSERT réservée
+au créateur de l'alerte concernée) mais **aucun envoi réel n'est
+implémenté** (toujours pas de job serveur/Twilio) : c'est la clôture de
+l'alerte, pas la file SMS, qui produit l'effet visible.
 
 **Compte de démo (2026-07-27)** : `apps/doctor-mobile/scripts/
 create-demo-account.mjs` (`pnpm --filter @d-red/doctor-mobile seed:demo`)

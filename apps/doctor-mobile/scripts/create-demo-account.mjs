@@ -28,6 +28,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const DEMO_EMAIL = 'demo.cnts@d-red.test';
 const DEMO_PASSWORD = 'DemoCnts2026!';
 
+// Fiche établissement pré-configurée par le CNTS à la création du compte —
+// le médecin ne la saisit jamais lui-même (voir lib/hospital.ts). Coordonnées
+// approximatives de l'Hôpital Principal de Dakar.
+const HOSPITAL_METADATA = {
+  hospital_name: 'Hôpital Principal de Dakar',
+  hospital_address: 'Avenue Nelson Mandela, Dakar',
+  hospital_lat: 14.6710,
+  hospital_lng: -17.4380,
+};
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const { data, error } = await supabase.auth.signUp({
@@ -38,13 +48,30 @@ const { data, error } = await supabase.auth.signUp({
       first_name: 'Démo',
       last_name: 'CNTS',
       role: 'CNTS_ADMIN',
+      ...HOSPITAL_METADATA,
     },
   },
 });
 
 if (error) {
   if (error.message.includes('already registered')) {
-    console.log(`Le compte ${DEMO_EMAIL} existe déjà — rien à faire.`);
+    console.log(`Le compte ${DEMO_EMAIL} existe déjà — mise à jour de la fiche établissement…`);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    if (signInError) {
+      console.error(
+        `Impossible de se connecter pour mettre à jour la fiche établissement : ${signInError.message}`,
+      );
+      process.exit(1);
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ data: HOSPITAL_METADATA });
+    if (updateError) {
+      console.error(`Erreur lors de la mise à jour : ${updateError.message}`);
+      process.exit(1);
+    }
+    console.log('Fiche établissement mise à jour sur le compte existant.');
   } else {
     console.error('Erreur :', error.message);
     process.exit(1);

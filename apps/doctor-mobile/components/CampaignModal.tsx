@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getCurrentCoords } from '../lib/location';
 import { supabase } from '../lib/supabase';
+import type { HospitalProfile } from '../lib/hospital';
 
 const colors = {
   ink: '#0b0b0d',
   inkSoft: '#4b4b52',
   white: '#ffffff',
+  beige: '#f8efd7',
   dred: '#a50606',
   success: '#1f9d55',
   border: '#e7e2d6',
@@ -29,14 +30,31 @@ function parseDayMonthYear(day: string, month: string, year: string): Date | nul
   return isValidCalendarDate ? date : null;
 }
 
+function parseHourMinute(hour: string, minute: string): { hour: number; minute: number } | null {
+  if (hour.trim() === '' || minute.trim() === '') return null;
+  const h = Number(hour);
+  const min = Number(minute);
+  if (!Number.isInteger(h) || h < 0 || h > 23) return null;
+  if (!Number.isInteger(min) || min < 0 || min > 59) return null;
+  return { hour: h, minute: min };
+}
+
+function withTime(date: Date, time: { hour: number; minute: number }): Date {
+  const result = new Date(date);
+  result.setHours(time.hour, time.minute, 0, 0);
+  return result;
+}
+
 export function CampaignModal({
   visible,
   onClose,
   doctorId,
+  hospital,
 }: {
   visible: boolean;
   onClose: () => void;
   doctorId: string;
+  hospital: HospitalProfile | null;
 }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -45,10 +63,13 @@ export function CampaignModal({
   const [day, setDay] = useState('');
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
+  const [startHour, setStartHour] = useState('');
+  const [startMinute, setStartMinute] = useState('');
   const [endDay, setEndDay] = useState('');
   const [endMonth, setEndMonth] = useState('');
   const [endYear, setEndYear] = useState('');
-  const [location, setLocation] = useState('');
+  const [endHour, setEndHour] = useState('');
+  const [endMinute, setEndMinute] = useState('');
   const [radiusKm, setRadiusKm] = useState<(typeof RADIUS_OPTIONS)[number] | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -68,10 +89,13 @@ export function CampaignModal({
     setDay('');
     setMonth('');
     setYear('');
+    setStartHour('');
+    setStartMinute('');
     setEndDay('');
     setEndMonth('');
     setEndYear('');
-    setLocation('');
+    setEndHour('');
+    setEndMinute('');
     setRadiusKm(null);
     setMessage(null);
     setCreated(false);
@@ -83,6 +107,12 @@ export function CampaignModal({
   }
 
   async function handleSubmit() {
+    if (!hospital) {
+      setMessage(
+        "Ton compte n'a pas de fiche établissement configurée — contacte le CNTS pour la faire renseigner.",
+      );
+      return;
+    }
     if (!title.trim()) {
       setMessage('Indique un titre pour la campagne.');
       return;
@@ -91,22 +121,30 @@ export function CampaignModal({
       setMessage('Sélectionne au moins un groupe sanguin, ou "Tous les groupes".');
       return;
     }
-    const scheduledDate = parseDayMonthYear(day, month, year);
-    if (!scheduledDate) {
+    const scheduledDay = parseDayMonthYear(day, month, year);
+    if (!scheduledDay) {
       setMessage('Date invalide (format JJ/MM/AAAA).');
       return;
     }
-    const endDate = parseDayMonthYear(endDay, endMonth, endYear);
-    if (!endDate) {
+    const startTime = parseHourMinute(startHour, startMinute);
+    if (!startTime) {
+      setMessage("Heure de début invalide (format HH:MM).");
+      return;
+    }
+    const endDay_ = parseDayMonthYear(endDay, endMonth, endYear);
+    if (!endDay_) {
       setMessage('Date de fin invalide (format JJ/MM/AAAA).');
       return;
     }
-    if (endDate < scheduledDate) {
-      setMessage('La date de fin doit être après la date de la campagne.');
+    const endTime = parseHourMinute(endHour, endMinute);
+    if (!endTime) {
+      setMessage("Heure de fin invalide (format HH:MM).");
       return;
     }
-    if (!location.trim()) {
-      setMessage('Indique le lieu de la campagne.');
+    const scheduledDate = withTime(scheduledDay, startTime);
+    const endDate = withTime(endDay_, endTime);
+    if (endDate <= scheduledDate) {
+      setMessage('La date/heure de fin doit être après le début de la campagne.');
       return;
     }
     if (!radiusKm) {
@@ -117,22 +155,15 @@ export function CampaignModal({
     setLoading(true);
     setMessage(null);
 
-    const coords = await getCurrentCoords();
-    if (!coords) {
-      setMessage("Impossible d'obtenir ta position — autorise la localisation puis réessaie.");
-      setLoading(false);
-      return;
-    }
-
     const { error } = await supabase.from('campaigns').insert({
       title: title.trim(),
       description: description.trim() || null,
       blood_groups: allGroups ? null : selectedGroups,
       scheduled_at: scheduledDate.toISOString(),
       ends_at: endDate.toISOString(),
-      location_label: location.trim(),
-      origin_lat: coords.latitude,
-      origin_lng: coords.longitude,
+      location_label: hospital.name,
+      origin_lat: hospital.lat,
+      origin_lng: hospital.lng,
       radius_km: radiusKm,
       created_by: doctorId,
     });
@@ -219,7 +250,7 @@ export function CampaignModal({
                 </View>
               )}
 
-              <Text style={styles.sectionLabel}>Date</Text>
+              <Text style={styles.sectionLabel}>Date et heure de début</Text>
               <View style={styles.row}>
                 <TextInput
                   style={[styles.input, styles.dateInput]}
@@ -245,9 +276,25 @@ export function CampaignModal({
                   value={year}
                   onChangeText={setYear}
                 />
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  placeholder="HH"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={startHour}
+                  onChangeText={setStartHour}
+                />
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  placeholder="MM"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={startMinute}
+                  onChangeText={setStartMinute}
+                />
               </View>
 
-              <Text style={styles.sectionLabel}>Date de fin</Text>
+              <Text style={styles.sectionLabel}>Date et heure de fin</Text>
               <View style={styles.row}>
                 <TextInput
                   style={[styles.input, styles.dateInput]}
@@ -273,15 +320,34 @@ export function CampaignModal({
                   value={endYear}
                   onChangeText={setEndYear}
                 />
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  placeholder="HH"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={endHour}
+                  onChangeText={setEndHour}
+                />
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  placeholder="MM"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={endMinute}
+                  onChangeText={setEndMinute}
+                />
               </View>
 
               <Text style={styles.sectionLabel}>Lieu</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex : Place du Souvenir, Dakar"
-                value={location}
-                onChangeText={setLocation}
-              />
+              <View style={styles.hospitalCard}>
+                <Feather name="map-pin" size={16} color={colors.dred} />
+                <View style={styles.hospitalTextWrap}>
+                  <Text style={styles.hospitalName}>
+                    {hospital ? hospital.name : 'Aucun établissement configuré'}
+                  </Text>
+                  {hospital?.address && <Text style={styles.hospitalAddress}>{hospital.address}</Text>}
+                </View>
+              </View>
 
               <Text style={styles.sectionLabel}>Rayon de diffusion</Text>
               <View style={styles.chipRow}>
@@ -361,6 +427,31 @@ const styles = StyleSheet.create({
   },
   yearInput: {
     flex: 1.4,
+  },
+  timeInput: {
+    flex: 0.8,
+    textAlign: 'center',
+  },
+  hospitalCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: colors.beige,
+    borderRadius: 12,
+    padding: 12,
+  },
+  hospitalTextWrap: {
+    flex: 1,
+  },
+  hospitalName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  hospitalAddress: {
+    fontSize: 12,
+    color: colors.inkSoft,
+    marginTop: 2,
   },
   input: {
     borderWidth: 1,

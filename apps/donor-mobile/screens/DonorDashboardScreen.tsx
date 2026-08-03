@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { CampaignsSection } from '../components/CampaignsSection';
+import { DonationCelebrationModal } from '../components/DonationCelebrationModal';
 import { EmergencyFeedSection } from '../components/EmergencyFeedSection';
 import { PinPromptModal } from '../components/PinPromptModal';
 import { QrPassModal } from '../components/QrPassModal';
@@ -70,12 +71,6 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
     ? new Date(metadata.last_donation_date)
     : null;
 
-  // Aucune table `donors`/`blood_requests` branchée pour l'instant (schéma
-  // encore à confirmer) : le nombre de dons vient de `last_donation_date`
-  // renseigné à l'inscription (0 ou 1 connu), pas d'un historique complet.
-  const donationsCompleted = lastDonationDate ? 1 : 0;
-  const livesImpacted = donationsCompleted * LIVES_PER_DONATION;
-
   const { eligible, daysRemaining, monthsRemaining, eligibleFrom } = getEligibility(
     lastDonationDate,
     sex,
@@ -85,6 +80,18 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [passVisible, setPassVisible] = useState(false);
   const [pinPromptVisible, setPinPromptVisible] = useState(false);
+  // Historique réel (table `donations`, RLS : le donneur ne lit que ses
+  // propres lignes), plus fiable que l'ancien calcul 0/1 basé sur
+  // `last_donation_date`. `null` tant que le premier chargement n'a pas
+  // répondu — affiché comme 0 en attendant (requête rapide, pas de skeleton
+  // dédié pour un simple compteur).
+  const [totalDonations, setTotalDonations] = useState<number | null>(null);
+  // Non-null = un don vient d'être validé côté médecin, affiche la modale
+  // de félicitations avec ce total.
+  const [celebrationTotal, setCelebrationTotal] = useState<number | null>(null);
+
+  const donationsCompleted = totalDonations ?? 0;
+  const livesImpacted = donationsCompleted * LIVES_PER_DONATION;
 
   useEffect(() => {
     (async () => {
@@ -97,6 +104,42 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
       setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
     })();
   }, []);
+
+  useEffect(() => {
+    async function refreshDonationsCount(showCelebration: boolean) {
+      const { count, error } = await supabase
+        .from('donations')
+        .select('id', { count: 'exact', head: true })
+        .eq('donor_id', session.user.id);
+      if (error) return;
+      const total = count ?? 0;
+      setTotalDonations(total);
+      if (showCelebration) setCelebrationTotal(total);
+    }
+
+    refreshDonationsCount(false);
+
+    // Réactivité temps réel : dès que le médecin valide le don (scan du
+    // pass, RPC `validate_donation`), la modale de félicitations s'affiche
+    // sans action du donneur — même mécanique que les flux
+    // campagnes/urgences (refetch complet plutôt qu'incrément local, pour
+    // rester la source de vérité même en cas d'événements manqués).
+    const channel = supabase
+      .channel(`donor_donations_${session.user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'donations' },
+        (payload) => {
+          const row = payload.new as { donor_id: string };
+          if (row.donor_id === session.user.id) refreshDonationsCount(true);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session.user.id]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -182,7 +225,12 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
 
       {eligible ? (
         <>
-          <EmergencyFeedSection donorId={session.user.id} bloodGroup={bloodGroup} coords={coords} />
+          <EmergencyFeedSection
+            donorId={session.user.id}
+            donorProfile={{ firstName, lastName, bloodGroup, phone: session.user.phone ?? null }}
+            bloodGroup={bloodGroup}
+            coords={coords}
+          />
           <CampaignsSection bloodGroup={bloodGroup} coords={coords} />
         </>
       ) : (
@@ -216,6 +264,11 @@ export function DonorDashboardScreen({ session }: { session: Session }) {
           sex,
           lastDonationDate: metadata.last_donation_date ?? null,
         }}
+      />
+      <DonationCelebrationModal
+        visible={celebrationTotal !== null}
+        totalDonations={celebrationTotal ?? 0}
+        onClose={() => setCelebrationTotal(null)}
       />
     </ScrollView>
   );

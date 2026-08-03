@@ -10,13 +10,18 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "sn.dred.donor",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -28,6 +33,11 @@
           "locationWhenInUsePermission": "D.RED utilise ta position pour te proposer les urgences de don de sang les plus proches."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f91a2df8-8398-4272-ad1b-9c9ddb71b52d"
+      }
+    }
   }
 }

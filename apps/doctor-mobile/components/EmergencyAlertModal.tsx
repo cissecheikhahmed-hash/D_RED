@@ -1,13 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getCurrentCoords } from '../lib/location';
 import { supabase } from '../lib/supabase';
+import type { HospitalProfile } from '../lib/hospital';
 
 const colors = {
   ink: '#0b0b0d',
   inkSoft: '#4b4b52',
   white: '#ffffff',
+  beige: '#f8efd7',
   dred: '#a50606',
   success: '#1f9d55',
   border: '#e7e2d6',
@@ -24,30 +25,42 @@ const DURATION_OPTIONS = [
   { label: '48 h', hours: 48 },
 ] as const;
 
+const NEED_TYPES = ['Sang Total', 'Plasma', 'Plaquettes'] as const;
+
 export function EmergencyAlertModal({
   visible,
   onClose,
   doctorId,
+  hospital,
 }: {
   visible: boolean;
   onClose: () => void;
   doctorId: string;
+  hospital: HospitalProfile | null;
 }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [bloodGroup, setBloodGroup] = useState<BloodGroup | null>(null);
+  const [allGroups, setAllGroups] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<BloodGroup[]>([]);
+  const [needType, setNeedType] = useState<(typeof NEED_TYPES)[number] | null>(null);
   const [units, setUnits] = useState('');
   const [durationHours, setDurationHours] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
 
+  function toggleGroup(group: BloodGroup) {
+    setSelectedGroups((current) =>
+      current.includes(group) ? current.filter((g) => g !== group) : [...current, group],
+    );
+  }
+
   function reset() {
     setTitle('');
     setDescription('');
-    setLocation('');
-    setBloodGroup(null);
+    setAllGroups(false);
+    setSelectedGroups([]);
+    setNeedType(null);
     setUnits('');
     setDurationHours(null);
     setMessage(null);
@@ -60,12 +73,14 @@ export function EmergencyAlertModal({
   }
 
   async function handleSubmit() {
-    if (!location.trim()) {
-      setMessage("Indique le lieu/l'adresse de l'urgence.");
+    if (!hospital) {
+      setMessage(
+        "Ton compte n'a pas de fiche établissement configurée — contacte le CNTS pour la faire renseigner.",
+      );
       return;
     }
-    if (!bloodGroup) {
-      setMessage('Sélectionne le groupe sanguin requis.');
+    if (!allGroups && selectedGroups.length === 0) {
+      setMessage('Sélectionne au moins un groupe sanguin, ou "Tous groupes compatibles".');
       return;
     }
     const unitsNumber = Number(units);
@@ -81,25 +96,23 @@ export function EmergencyAlertModal({
     setLoading(true);
     setMessage(null);
 
-    const coords = await getCurrentCoords();
-    if (!coords) {
-      setMessage("Impossible d'obtenir ta position — autorise la localisation puis réessaie.");
-      setLoading(false);
-      return;
-    }
-
     const endsAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
-    const defaultTitle = `Besoin urgent de poches ${bloodGroup}`;
+    const groupsLabel = allGroups ? 'tous groupes' : selectedGroups.join('/');
+    const defaultTitle = `Besoin urgent de poches ${groupsLabel}`;
 
+    // `blood_group` (singulier) n'est plus renseigné : remplacé par
+    // `blood_groups` (tableau, null = tous groupes compatibles), sur le
+    // même modèle que campaigns.blood_groups.
     const { error } = await supabase.from('emergency_alerts').insert({
       title: title.trim() || defaultTitle,
       description: description.trim() || null,
-      location_label: location.trim(),
-      blood_group: bloodGroup,
+      location_label: hospital.name,
+      blood_groups: allGroups ? null : selectedGroups,
+      need_type: needType,
       units_needed: unitsNumber,
       radius_km: FIXED_RADIUS_KM,
-      origin_lat: coords.latitude,
-      origin_lng: coords.longitude,
+      origin_lat: hospital.lat,
+      origin_lng: hospital.lng,
       ends_at: endsAt.toISOString(),
       created_by: doctorId,
     });
@@ -151,13 +164,16 @@ export function EmergencyAlertModal({
                 onChangeText={setTitle}
               />
 
-              <Text style={styles.sectionLabel}>Lieu / adresse</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex : Hôpital Principal de Dakar"
-                value={location}
-                onChangeText={setLocation}
-              />
+              <Text style={styles.sectionLabel}>Lieu</Text>
+              <View style={styles.hospitalCard}>
+                <Feather name="map-pin" size={16} color={colors.dred} />
+                <View style={styles.hospitalTextWrap}>
+                  <Text style={styles.hospitalName}>
+                    {hospital ? hospital.name : 'Aucun établissement configuré'}
+                  </Text>
+                  {hospital?.address && <Text style={styles.hospitalAddress}>{hospital.address}</Text>}
+                </View>
+              </View>
 
               <Text style={styles.sectionLabel}>Description (optionnel)</Text>
               <TextInput
@@ -169,16 +185,42 @@ export function EmergencyAlertModal({
                 onChangeText={setDescription}
               />
 
-              <Text style={styles.sectionLabel}>Groupe sanguin requis</Text>
+              <Text style={styles.sectionLabel}>Groupe(s) sanguin(s) requis</Text>
+              <Pressable style={styles.checkboxRow} onPress={() => setAllGroups((v) => !v)}>
+                <View style={[styles.checkbox, allGroups && styles.checkboxChecked]} />
+                <Text style={styles.checkboxLabel}>Tous groupes compatibles</Text>
+              </Pressable>
+              {!allGroups && (
+                <View style={styles.chipRow}>
+                  {BLOOD_GROUPS.map((group) => (
+                    <Pressable
+                      key={group}
+                      style={[styles.chip, selectedGroups.includes(group) && styles.chipSelected]}
+                      onPress={() => toggleGroup(group)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          selectedGroups.includes(group) && styles.chipTextSelected,
+                        ]}
+                      >
+                        {group}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              <Text style={styles.sectionLabel}>Type de besoin (optionnel)</Text>
               <View style={styles.chipRow}>
-                {BLOOD_GROUPS.map((group) => (
+                {NEED_TYPES.map((type) => (
                   <Pressable
-                    key={group}
-                    style={[styles.chip, bloodGroup === group && styles.chipSelected]}
-                    onPress={() => setBloodGroup(group)}
+                    key={type}
+                    style={[styles.chip, needType === type && styles.chipSelected]}
+                    onPress={() => setNeedType(needType === type ? null : type)}
                   >
-                    <Text style={[styles.chipText, bloodGroup === group && styles.chipTextSelected]}>
-                      {group}
+                    <Text style={[styles.chipText, needType === type && styles.chipTextSelected]}>
+                      {type}
                     </Text>
                   </Pressable>
                 ))}
@@ -213,7 +255,7 @@ export function EmergencyAlertModal({
               <View style={styles.radiusNote}>
                 <Feather name="map-pin" size={14} color={colors.inkSoft} />
                 <Text style={styles.radiusNoteText}>
-                  Rayon fixe : {FIXED_RADIUS_KM} km autour de ta position actuelle
+                  Rayon fixe : {FIXED_RADIUS_KM} km autour de l'établissement
                 </Text>
               </View>
 
@@ -290,12 +332,52 @@ const styles = StyleSheet.create({
   chipTextSelected: {
     color: colors.white,
   },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.dred,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.dred,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: colors.ink,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
+  },
+  hospitalCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: colors.beige,
+    borderRadius: 12,
+    padding: 12,
+  },
+  hospitalTextWrap: {
+    flex: 1,
+  },
+  hospitalName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  hospitalAddress: {
+    fontSize: 12,
+    color: colors.inkSoft,
+    marginTop: 2,
   },
   textArea: {
     minHeight: 56,

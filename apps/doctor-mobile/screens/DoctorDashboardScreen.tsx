@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CampaignModal } from '../components/CampaignModal';
 import { EmergencyAlertModal } from '../components/EmergencyAlertModal';
+import { EmergencyResponsesPanel } from '../components/EmergencyResponsesPanel';
 import { ScanDonorModal } from '../components/ScanDonorModal';
+import { getHospitalProfile } from '../lib/hospital';
 import { supabase } from '../lib/supabase';
 
 const colors = {
@@ -23,6 +25,7 @@ export function DoctorDashboardScreen({ session }: { session: Session }) {
 
   const role: string | null = session.user.user_metadata?.role ?? null;
   const isAuthorizedRole = role === 'HOSPITAL' || role === 'CNTS_ADMIN';
+  const hospital = getHospitalProfile(session.user);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -50,11 +53,22 @@ export function DoctorDashboardScreen({ session }: { session: Session }) {
         </View>
       )}
 
+      {!hospital && (
+        <View style={styles.warningBanner}>
+          <Feather name="alert-triangle" size={16} color="#B45309" />
+          <Text style={styles.warningText}>
+            Aucune fiche établissement (nom/adresse/position) n'est configurée sur ce compte —
+            demande au CNTS de la renseigner avant de créer une alerte ou une campagne.
+          </Text>
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Mobiliser des donneurs</Text>
 
       <Pressable
-        style={[styles.primaryActionCard, styles.emergencyCard]}
-        onPress={() => setEmergencyModalVisible(true)}
+        style={[styles.primaryActionCard, styles.emergencyCard, !hospital && styles.actionCardDisabled]}
+        onPress={() => hospital && setEmergencyModalVisible(true)}
+        disabled={!hospital}
       >
         <View style={styles.emergencyIconWrap}>
           <Feather name="alert-circle" size={24} color={colors.white} />
@@ -68,16 +82,23 @@ export function DoctorDashboardScreen({ session }: { session: Session }) {
         <Feather name="chevron-right" size={20} color={colors.white} />
       </Pressable>
 
-      <Pressable style={styles.primaryActionCard} onPress={() => setCampaignModalVisible(true)}>
+      <Pressable
+        style={[styles.primaryActionCard, !hospital && styles.actionCardDisabled]}
+        onPress={() => hospital && setCampaignModalVisible(true)}
+        disabled={!hospital}
+      >
         <View style={styles.actionIconWrap}>
           <Feather name="calendar" size={22} color={colors.dred} />
         </View>
         <View style={styles.actionTextWrap}>
           <Text style={styles.actionTitle}>Campagne de don programmée</Text>
-          <Text style={styles.actionSubtitle}>Titre, date, lieu, groupes ciblés, rayon</Text>
+          <Text style={styles.actionSubtitle}>Titre, horaires, groupes ciblés, rayon</Text>
         </View>
         <Feather name="chevron-right" size={20} color={colors.inkSoft} />
       </Pressable>
+
+      <Text style={styles.sectionTitle}>Missions en cours</Text>
+      <EmergencyResponsesPanel doctorId={session.user.id} hospital={hospital} />
 
       <Text style={styles.sectionTitle}>Vérification sur place</Text>
 
@@ -96,11 +117,13 @@ export function DoctorDashboardScreen({ session }: { session: Session }) {
         visible={campaignModalVisible}
         onClose={() => setCampaignModalVisible(false)}
         doctorId={session.user.id}
+        hospital={hospital}
       />
       <EmergencyAlertModal
         visible={emergencyModalVisible}
         onClose={() => setEmergencyModalVisible(false)}
         doctorId={session.user.id}
+        hospital={hospital}
       />
       <ScanDonorModal visible={scanModalVisible} onClose={() => setScanModalVisible(false)} />
     </ScrollView>
@@ -181,6 +204,9 @@ const styles = StyleSheet.create({
   },
   emergencyCard: {
     backgroundColor: colors.dred,
+  },
+  actionCardDisabled: {
+    opacity: 0.5,
   },
   emergencyIconWrap: {
     width: 44,
